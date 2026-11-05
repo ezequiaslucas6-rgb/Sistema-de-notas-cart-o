@@ -56,11 +56,10 @@ Testes: `npm test` · Tipos: `npm run typecheck`.
 
 ## Identidade visual
 
-As cores ficam em `src/app/globals.css` (variáveis `--brand-*`) e o logo em `src/components/Logo.tsx`. Para usar o logo oficial, coloque o arquivo em `public/logo.png` e troque o conteúdo do componente por `<img src="/logo.png" …>`.
+O logo oficial está em `public/logo.png` (e `src/app/icon.png` como ícone da aba) e as cores em `src/app/globals.css` (variáveis `--brand-*`).
 
 ## Pendências / próximos passos sugeridos
 
-- Logo e cores oficiais da Nortetel (hoje há um logotipo provisório e azul neutro).
 - Notificações por WhatsApp (requer provedor, ex.: Meta Cloud API/Twilio).
 - Autenticação em dois fatores (TOTP) para administradores e financeiro.
 - Integração específica com o sistema contábil/ERP da empresa (hoje: exportação + API).

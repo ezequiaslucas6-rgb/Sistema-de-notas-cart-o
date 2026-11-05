@@ -3,16 +3,16 @@
 @tailwind utilities;
 
 /*
-  Identidade visual – Nortetel.
+  Identidade visual – Nortetel (azul/verde do logo oficial).
   Troque apenas estes valores (formato "R G B") para aplicar as cores oficiais em todo o sistema.
 */
 :root {
-  --brand-50: 238 245 252;
-  --brand-100: 214 230 246;
-  --brand-500: 30 111 196;
-  --brand-600: 21 90 166;
-  --brand-700: 15 68 130;
-  --brand-900: 9 38 74;
+  --brand-50: 235 244 254;
+  --brand-100: 204 228 252;
+  --brand-500: 0 139 237;
+  --brand-600: 0 105 233;
+  --brand-700: 0 84 190;
+  --brand-900: 0 40 100;
 }
 
 html { -webkit-text-size-adjust: 100%; }

@@ -2,7 +2,7 @@ import { Logo } from "./Logo";
 
 export function AuthShell({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <main className="grid min-h-screen place-items-center bg-gradient-to-br from-brand-50 to-slate-100 px-4 py-10">
+    <main className="grid min-h-screen place-items-center bg-gradient-to-br from-brand-100 via-brand-50 to-emerald-50 px-4 py-10">
       <div className="w-full max-w-md">
         <Logo className="mb-6 justify-center" />
         <div className="card p-6 sm:p-8">
