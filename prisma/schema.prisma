@@ -234,3 +234,10 @@ model ApiToken {
   revokedAt  DateTime?
   createdAt  DateTime  @default(now())
 }
+
+/// Conteúdo dos anexos quando STORAGE_DRIVER=db (padrão em produção sem Storage externo).
+model FileBlob {
+  storageKey String @id
+  data       Bytes
+  createdAt  DateTime @default(now())
+}

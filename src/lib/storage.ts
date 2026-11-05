@@ -1,6 +1,7 @@
 import "server-only";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { db } from "./db";
 
 const driver = () => process.env.STORAGE_DRIVER ?? "local";
 const LOCAL_DIR = path.join(process.cwd(), "uploads");
@@ -21,6 +22,10 @@ const safeKey = (key: string) => {
 
 export async function putFile(key: string, data: Buffer, mime: string) {
   safeKey(key);
+  if (driver() === "db") {
+    await db.fileBlob.create({ data: { storageKey: key, data: new Uint8Array(data) } });
+    return;
+  }
   if (driver() === "supabase") {
     const { url, headers } = supa();
     const res = await fetch(`${url}/storage/v1/object/${bucket()}/${key}`, {
@@ -38,6 +43,11 @@ export async function putFile(key: string, data: Buffer, mime: string) {
 
 export async function getFile(key: string): Promise<Buffer> {
   safeKey(key);
+  if (driver() === "db") {
+    const row = await db.fileBlob.findUnique({ where: { storageKey: key } });
+    if (!row) throw new Error("Anexo indisponível");
+    return Buffer.from(row.data);
+  }
   if (driver() === "supabase") {
     const { url, headers } = supa();
     const res = await fetch(`${url}/storage/v1/object/authenticated/${bucket()}/${key}`, { headers });
@@ -50,6 +60,10 @@ export async function getFile(key: string): Promise<Buffer> {
 export async function deleteFile(key: string) {
   safeKey(key);
   try {
+    if (driver() === "db") {
+      await db.fileBlob.deleteMany({ where: { storageKey: key } });
+      return;
+    }
     if (driver() === "supabase") {
       const { url, headers } = supa();
       await fetch(`${url}/storage/v1/object/${bucket()}/${key}`, { method: "DELETE", headers });
