@@ -1,0 +1,236 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  FINANCEIRO
+  GESTOR
+  USUARIO
+}
+
+enum ExpenseStatus {
+  LANCADA
+  REVISADA
+}
+
+enum PaymentMethod {
+  CREDITO
+  DEBITO
+  OUTRO
+}
+
+model Sector {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  users      User[]
+  expenses   Expense[]
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  active    Boolean   @default(true)
+  expenses  Expense[]
+}
+
+model CostCenter {
+  id        String    @id @default(cuid())
+  code      String?
+  name      String    @unique
+  active    Boolean   @default(true)
+  expenses  Expense[]
+}
+
+model Project {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  active    Boolean   @default(true)
+  expenses  Expense[]
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  name               String
+  // CPF: nunca em texto puro. cpfHash = HMAC p/ busca/unicidade; cpfEnc = AES-256-GCM p/ exibição.
+  cpfHash            String    @unique
+  cpfEnc             String
+  cpfLast2           String
+  email              String?   @unique
+  phone              String?   @unique
+  passwordHash       String
+  role               Role      @default(USUARIO)
+  sectorId           String?
+  sector             Sector?   @relation(fields: [sectorId], references: [id])
+  active             Boolean   @default(true)
+  mustChangePassword Boolean   @default(true)
+  failedLogins       Int       @default(0)
+  lockedUntil        DateTime?
+  lastLoginAt        DateTime?
+  consentAt          DateTime?
+  anonymizedAt       DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  sessions       Session[]
+  expenses       Expense[]       @relation("ExpenseAuthor")
+  reviewed       Expense[]       @relation("ExpenseReviewer")
+  comments       ExpenseComment[]
+  notifications  Notification[]
+  resetTokens    PasswordResetToken[]
+  apiTokens      ApiToken[]
+  attachments    Attachment[]
+
+  @@index([role])
+  @@index([sectorId])
+}
+
+model Session {
+  id         String   @id // SHA-256 do token opaco guardado no cookie
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  lastSeenAt DateTime @default(now())
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String    @id // SHA-256 do token enviado por e-mail
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Expense {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation("ExpenseAuthor", fields: [userId], references: [id])
+  sectorId      String?
+  sector        Sector?       @relation(fields: [sectorId], references: [id])
+  date          DateTime      @db.Date
+  amountCents   Int
+  supplier      String
+  cnpj          String?
+  nfeKey        String?
+  categoryId    String
+  category      Category      @relation(fields: [categoryId], references: [id])
+  costCenterId  String?
+  costCenter    CostCenter?   @relation(fields: [costCenterId], references: [id])
+  projectId     String?
+  project       Project?      @relation(fields: [projectId], references: [id])
+  paymentMethod PaymentMethod @default(CREDITO)
+  cardLast4     String?
+  description   String
+  observation   String?
+  status        ExpenseStatus @default(LANCADA)
+  reviewedById  String?
+  reviewedBy    User?         @relation("ExpenseReviewer", fields: [reviewedById], references: [id])
+  reviewedAt    DateTime?
+  reviewNote    String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  attachments Attachment[]
+  comments    ExpenseComment[]
+
+  @@index([userId, date])
+  @@index([date])
+  @@index([status])
+  @@index([sectorId])
+  @@index([categoryId])
+  @@index([deletedAt])
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  expenseId  String?
+  expense    Expense? @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  uploadedBy String
+  uploader   User     @relation(fields: [uploadedBy], references: [id])
+  storageKey String   @unique
+  filename   String
+  mime       String
+  size       Int
+  sha256     String
+  createdAt  DateTime @default(now())
+
+  @@index([expenseId])
+  @@index([uploadedBy, expenseId])
+}
+
+model ExpenseComment {
+  id        String   @id @default(cuid())
+  expenseId String
+  expense   Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  text      String
+  createdAt DateTime @default(now())
+
+  @@index([expenseId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actorName String?
+  action    String
+  entity    String?
+  entityId  String?
+  meta      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entity, entityId])
+  @@index([actorId])
+}
+
+model RateLimit {
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+}
+
+model ApiToken {
+  id         String    @id @default(cuid())
+  name       String
+  tokenHash  String    @unique
+  prefix     String
+  createdById String
+  createdBy  User      @relation(fields: [createdById], references: [id])
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+}
