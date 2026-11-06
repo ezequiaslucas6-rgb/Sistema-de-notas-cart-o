@@ -13,7 +13,7 @@ export default async function Notifications() {
   const unread = items.some((i) => !i.readAt);
   return (
     <>
-      <PageTitle title="Notificações">{unread && <form action={markNotificationsReadAction}><button className="btn-secondary">Marcar todas como lidas</button></form>}</PageTitle>
+      <PageTitle title="Notificações" subtitle="Avisos sobre suas notas e revisões">{unread && <form action={markNotificationsReadAction}><button className="btn-secondary">Marcar todas como lidas</button></form>}</PageTitle>
       <div className="card divide-y divide-slate-100">
         {items.length === 0 && <p className="p-5 text-sm text-slate-500">Você não tem notificações.</p>}
         {items.map((n) => {

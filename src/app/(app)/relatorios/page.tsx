@@ -32,7 +32,7 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
 
   return (
     <>
-      <PageTitle title="Relatórios" />
+      <PageTitle title="Relatórios" subtitle="Filtre, analise e exporte em Excel, CSV ou PDF" />
       <FilterBar actor={a} f={f} action="/relatorios" exportLinks />
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         <Kpi label="Total no filtro" value={formatBRL(sum(tot))} />

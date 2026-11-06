@@ -21,7 +21,7 @@ export default async function EditExpense({ params }: { params: Promise<{ id: st
   ]);
   return (
     <>
-      <PageTitle title="Editar nota" />
+      <PageTitle title="Editar nota" subtitle="As alterações ficam registradas na auditoria" />
       <ExpenseForm
         mode="edit"
         action={updateExpenseAction}

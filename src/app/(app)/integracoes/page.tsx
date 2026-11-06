@@ -15,7 +15,7 @@ export default async function Integrations() {
   const tokens = await db.apiToken.findMany({ orderBy: { createdAt: "desc" } });
   return (
     <>
-      <PageTitle title="Integrações" />
+      <PageTitle title="Integrações" subtitle="API de consulta para contabilidade, ERP e planilhas" />
       <section className="card mb-6 p-5">
         <h2 className="mb-2 font-semibold">API somente leitura</h2>
         <p className="mb-3 text-sm text-slate-600">Permite que contabilidade, ERP ou planilhas consultem as notas. Cada sistema recebe um token próprio que pode ser revogado a qualquer momento.</p>

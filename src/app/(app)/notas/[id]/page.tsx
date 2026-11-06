@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Download, FileText, Paperclip } from "lucide-react";
+import { FileText, Paperclip } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireUser, toActor } from "@/lib/session";
 import { canDeleteExpense, canEditExpense, canReview, canViewExpense } from "@/lib/permissions";
@@ -32,8 +32,11 @@ export default async function ExpenseDetail({ params, searchParams }: { params: 
 
   return (
     <>
-      {(sp.criada || sp.editada) && <div role="status" className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{sp.criada ? "Nota lançada com sucesso!" : "Nota atualizada."}</div>}
-      <PageTitle title={e.supplier}>
+      <PageTitle
+        title={e.supplier}
+        subtitle={`${brDate(e.date)} · ${e.category.name} · ${e.user.name}`}
+        notice={sp.criada ? { text: "Nota lançada com sucesso!" } : sp.editada ? { text: "Nota atualizada." } : undefined}
+      >
         <Link href="/notas" className="btn-secondary">← Voltar</Link>
         {canEditExpense(a) && <Link href={`/notas/${e.id}/editar`} className="btn-secondary">Editar</Link>}
       </PageTitle>
@@ -41,7 +44,7 @@ export default async function ExpenseDetail({ params, searchParams }: { params: 
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="card p-5 lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
-            <div className="text-3xl font-bold tabular-nums">{formatBRL(e.amountCents)}</div>
+            <div className="text-3xl font-bold tracking-tight tabular-nums text-slate-900">{formatBRL(e.amountCents)}</div>
             <StatusBadge status={e.status} />
           </div>
           <dl className="divide-y divide-slate-100">
@@ -63,18 +66,26 @@ export default async function ExpenseDetail({ params, searchParams }: { params: 
         <aside className="space-y-6">
           <section className="card p-5">
             <h2 className="mb-3 flex items-center gap-2 font-semibold"><Paperclip className="h-4 w-4" /> Anexos</h2>
-            <ul className="space-y-2">
-              {e.attachments.map((f) => (
-                <li key={f.id} className="flex items-center justify-between gap-2 text-sm">
-                  <a href={`/api/anexos/${f.id}`} target="_blank" rel="noopener" className="flex min-w-0 items-center gap-2 text-brand-700 hover:underline">
-                    {f.mime === "application/pdf" || f.mime === "application/xml" ? <FileText className="h-4 w-4 shrink-0" /> : <Download className="h-4 w-4 shrink-0" />}
-                    <span className="truncate">{f.filename}</span>
-                  </a>
-                  {canEditExpense(a) && e.attachments.length > 1 && (
-                    <form action={removeAttachmentAction}><input type="hidden" name="id" value={f.id} /><ConfirmButton className="text-xs text-red-600 hover:underline" message="Remover este anexo?">remover</ConfirmButton></form>
-                  )}
-                </li>
-              ))}
+            <ul className="grid grid-cols-2 gap-3">
+              {e.attachments.map((f) => {
+                const isImg = f.mime.startsWith("image/");
+                return (
+                  <li key={f.id} className="overflow-hidden rounded-xl border border-slate-200">
+                    <a href={`/api/anexos/${f.id}`} target="_blank" rel="noopener" className="block">
+                      {isImg ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={`/api/anexos/${f.id}`} alt={f.filename} loading="lazy" className="h-28 w-full bg-slate-50 object-cover" />
+                      ) : (
+                        <div className="grid h-28 place-items-center bg-slate-50 text-slate-400"><FileText className="h-9 w-9" aria-hidden /><span className="text-[11px] font-semibold uppercase">{f.mime === "application/pdf" ? "PDF" : "XML"}</span></div>
+                      )}
+                      <div className="truncate px-2.5 py-1.5 text-xs text-brand-700">{f.filename}</div>
+                    </a>
+                    {canEditExpense(a) && e.attachments.length > 1 && (
+                      <form action={removeAttachmentAction} className="border-t border-slate-100 px-2.5 py-1"><input type="hidden" name="id" value={f.id} /><ConfirmButton className="text-xs text-red-600 hover:underline" message="Remover este anexo?">remover</ConfirmButton></form>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
 

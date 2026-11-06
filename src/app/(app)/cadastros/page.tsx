@@ -39,7 +39,7 @@ export default async function Catalogs() {
   ]);
   return (
     <>
-      <PageTitle title="Cadastros" />
+      <PageTitle title="Cadastros" subtitle="Setores, categorias, centros de custo e projetos" />
       <div className="grid gap-6 lg:grid-cols-2">
         <Block title="Setores" kind="sector" label="Novo setor" items={sectors} />
         <Block title="Categorias de gasto" kind="category" label="Nova categoria" items={categories} />

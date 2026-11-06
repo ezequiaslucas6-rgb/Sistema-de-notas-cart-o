@@ -15,7 +15,7 @@ export default async function NewExpense() {
   ]);
   return (
     <>
-      <PageTitle title="Lançar nota do cartão" />
+      <PageTitle title="Lançar nota do cartão" subtitle="Anexe a nota, confira os dados e salve" />
       <ExpenseForm mode="create" action={createExpenseAction} categories={categories} costCenters={costCenters} projects={projects} today={new Date().toISOString().slice(0, 10)} />
     </>
   );

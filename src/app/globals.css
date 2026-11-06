@@ -4,7 +4,7 @@
 
 /*
   Identidade visual – Nortetel (azul/verde do logo oficial).
-  Troque apenas estes valores (formato "R G B") para aplicar as cores oficiais em todo o sistema.
+  Troque apenas estes valores (formato "R G B") para aplicar as cores em todo o sistema.
 */
 :root {
   --brand-50: 235 244 254;
@@ -13,20 +13,60 @@
   --brand-600: 0 105 233;
   --brand-700: 0 84 190;
   --brand-900: 0 40 100;
+  --accent: 25 201 138;
+  --shadow-card: 0 4px 18px -8px rgba(0, 60, 140, 0.22);
 }
 
 html { -webkit-text-size-adjust: 100%; }
-body { @apply bg-slate-50 text-slate-800 antialiased; }
+body {
+  @apply antialiased text-slate-800;
+  background: #f2f6fb;
+  font-family: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+}
+h1, h2, h3 { letter-spacing: -0.015em; }
 
 @layer components {
-  .input { @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base shadow-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25 disabled:bg-slate-100 sm:text-sm; }
-  .label { @apply mb-1 block text-sm font-medium text-slate-700; }
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60; }
-  .btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-700; }
-  .btn-secondary { @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50; }
-  .btn-danger { @apply btn bg-red-600 text-white hover:bg-red-700; }
-  .card { @apply rounded-xl border border-slate-200 bg-white shadow-sm; }
-  .badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium; }
-  .th { @apply whitespace-nowrap px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500; }
-  .td { @apply px-3 py-3 align-top text-sm; }
+  .input { @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-base shadow-sm outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15 disabled:bg-slate-100 sm:text-sm; }
+  .label { @apply mb-1.5 block text-sm font-medium text-slate-700; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/30 disabled:cursor-not-allowed disabled:opacity-60; }
+  .btn-primary { @apply btn bg-brand-600 text-white shadow-sm hover:bg-brand-700; }
+  .btn-secondary { @apply btn border border-slate-300 bg-white text-slate-700 shadow-sm hover:bg-slate-50; }
+  .btn-danger { @apply btn bg-red-600 text-white shadow-sm hover:bg-red-700; }
+  .card { background: #fff; border-radius: 1rem; box-shadow: var(--shadow-card); outline: 1px solid rgb(15 23 42 / 0.05); outline-offset: -1px; }
+  .badge { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+  .th { @apply whitespace-nowrap px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500; }
+  .td { @apply px-4 py-3.5 align-middle text-sm; }
+
+  /* ───── Faixa da marca (topo de cada página) ───── */
+  .hero-band {
+    position: relative; overflow: hidden; color: #fff;
+    background: linear-gradient(105deg, #0059d6 0%, #0098e6 50%, #19c98a 100%);
+    padding: 84px 36px 92px;
+  }
+  .hero-band::after { content: ""; position: absolute; right: -90px; top: -130px; width: 380px; height: 380px; border-radius: 9999px; background: rgb(255 255 255 / 0.09); pointer-events: none; }
+  .hero-row { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+  .hero-row h1 { font-size: 1.75rem; line-height: 1.15; font-weight: 700; }
+  .hero-row p.sub { margin-top: 4px; opacity: 0.9; }
+  .hero-notice { margin-top: 12px; display: inline-block; border-radius: 10px; padding: 6px 12px; font-size: 13px; font-weight: 500; background: rgb(255 255 255 / 0.2); }
+  .hero-notice.err { background: rgb(190 18 60 / 0.55); }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: 8px; position: relative; z-index: 1; }
+  .hero-actions .btn-primary { background: #fff; color: rgb(var(--brand-600)); box-shadow: 0 6px 16px -6px rgb(0 30 90 / 0.45); }
+  .hero-actions .btn-primary:hover { background: rgb(var(--brand-50)); }
+  .hero-actions .btn-secondary { background: rgb(255 255 255 / 0.16); border-color: rgb(255 255 255 / 0.4); color: #fff; box-shadow: none; }
+  .hero-actions .btn-secondary:hover { background: rgb(255 255 255 / 0.26); }
+
+  /* conteúdo da página: sobe sobre a faixa e ganha margens laterais */
+  .page > :where(:not(.hero-band)) { margin-left: 36px; margin-right: 36px; max-width: 1140px; }
+  .page > .hero-band + * { margin-top: -60px; position: relative; z-index: 2; }
+  .page > :last-child { margin-bottom: 40px; }
+  @media (max-width: 640px) {
+    .hero-band { padding: 76px 16px 78px; }
+    .hero-row h1 { font-size: 1.4rem; }
+    .page > :where(:not(.hero-band)) { margin-left: 16px; margin-right: 16px; }
+    .page > .hero-band + * { margin-top: -52px; }
+  }
+
+  /* ───── Menu lateral ───── */
+  .sidebar { background: linear-gradient(185deg, #0069e9 0%, #0054be 60%, #00418f 100%); color: #fff; }
 }

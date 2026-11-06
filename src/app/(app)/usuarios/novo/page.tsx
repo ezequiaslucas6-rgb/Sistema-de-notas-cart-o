@@ -12,7 +12,7 @@ export default async function NewUser() {
   const sectors = await db.sector.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } });
   return (
     <>
-      <PageTitle title="Novo usuário" />
+      <PageTitle title="Novo usuário" subtitle="Uma senha temporária será gerada para o primeiro acesso" />
       <div className="max-w-2xl"><CreateUserForm roles={assignableRoles(a)} sectors={sectors} lockedSectorId={a.role === "GESTOR" ? a.sectorId : null} /></div>
     </>
   );

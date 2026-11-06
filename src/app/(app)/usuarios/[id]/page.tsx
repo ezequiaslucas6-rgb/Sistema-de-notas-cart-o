@@ -23,8 +23,7 @@ export default async function UserDetail({ params }: { params: Promise<{ id: str
   if (!u.anonymizedAt) await audit({ actor: me, action: "usuario.cpf_visualizado", entity: "User", entityId: u.id });
   return (
     <>
-      <PageTitle title={u.name} />
-      <p className="mb-4 text-sm text-slate-600">CPF {cpf} · {ROLE_LABEL[u.role]} · último acesso {u.lastLoginAt ? u.lastLoginAt.toLocaleString("pt-BR", { timeZone: "America/Porto_Velho" }) : "nunca"}</p>
+      <PageTitle title={u.name} subtitle={`CPF ${cpf} · ${ROLE_LABEL[u.role]} · último acesso ${u.lastLoginAt ? u.lastLoginAt.toLocaleString("pt-BR", { timeZone: "America/Porto_Velho" }) : "nunca"}`} />
       {u.anonymizedAt ? (
         <p className="card p-5 text-sm">Dados pessoais anonimizados em {u.anonymizedAt.toLocaleDateString("pt-BR")}.</p>
       ) : (

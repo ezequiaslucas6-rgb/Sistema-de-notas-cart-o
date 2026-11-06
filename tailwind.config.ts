@@ -15,7 +15,7 @@ const config: Config = {
           900: "rgb(var(--brand-900) / <alpha-value>)",
         },
       },
-      fontFamily: { sans: ["system-ui", "Segoe UI", "Roboto", "Helvetica", "Arial", "sans-serif"] },
+      fontFamily: { sans: ["Inter Variable", "system-ui", "Segoe UI", "Roboto", "Helvetica", "Arial", "sans-serif"] },
     },
   },
   plugins: [],

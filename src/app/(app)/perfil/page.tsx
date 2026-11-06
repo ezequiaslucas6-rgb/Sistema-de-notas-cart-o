@@ -13,7 +13,7 @@ export default async function Profile() {
   const u = await db.user.findUniqueOrThrow({ where: { id: me.id }, include: { sector: true } });
   return (
     <>
-      <PageTitle title="Meu perfil" />
+      <PageTitle title="Meu perfil" subtitle="Seus dados, senha e privacidade" />
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="card space-y-1 p-5 text-sm">
           <h2 className="mb-2 font-semibold">Dados cadastrais</h2>

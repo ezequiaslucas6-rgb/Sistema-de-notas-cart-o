@@ -18,8 +18,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   ]);
   return (
     <>
-      <PageTitle title="Auditoria" />
-      <form className="mb-4 flex gap-2"><input name="q" defaultValue={sp.q} placeholder="Filtrar por ação ou pessoa" className="input max-w-sm" /><button className="btn-secondary">Filtrar</button></form>
+      <PageTitle title="Auditoria" subtitle="Registro de acessos e alterações no sistema" />
+      <form className="card mb-5 flex gap-2 p-3"><input name="q" defaultValue={sp.q} placeholder="Filtrar por ação ou pessoa" className="input max-w-sm" /><button className="btn-secondary">Filtrar</button></form>
       <div className="card overflow-x-auto">
         <table className="min-w-full divide-y divide-slate-100">
           <thead className="bg-slate-50"><tr><th className="th">Quando</th><th className="th">Quem</th><th className="th">Ação</th><th className="th hidden md:table-cell">Detalhes</th><th className="th hidden md:table-cell">IP</th></tr></thead>

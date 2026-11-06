@@ -24,8 +24,8 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
   });
   return (
     <>
-      <PageTitle title="Usuários"><Link href="/usuarios/novo" className="btn-primary">+ Novo usuário</Link></PageTitle>
-      <form className="mb-4 flex gap-2"><input name="q" defaultValue={q} placeholder="Buscar por nome ou e-mail" className="input max-w-sm" /><button className="btn-secondary">Buscar</button></form>
+      <PageTitle title="Usuários" subtitle={`${users.length} cadastrado${users.length === 1 ? "" : "s"}`}><Link href="/usuarios/novo" className="btn-primary">+ Novo usuário</Link></PageTitle>
+      <form className="card mb-5 flex gap-2 p-3"><input name="q" defaultValue={q} placeholder="Buscar por nome ou e-mail" className="input max-w-sm" /><button className="btn-secondary">Buscar</button></form>
       <div className="card overflow-x-auto">
         <table className="min-w-full divide-y divide-slate-100">
           <thead className="bg-slate-50"><tr><th className="th">Nome</th><th className="th hidden md:table-cell">CPF</th><th className="th hidden md:table-cell">Contato</th><th className="th">Perfil</th><th className="th hidden sm:table-cell">Setor</th><th className="th">Situação</th></tr></thead>
@@ -34,7 +34,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
               <tr key={u.id} className="hover:bg-slate-50">
                 <td className="td font-medium">{canAdminUser(a, u) || u.id === me.id ? <Link href={`/usuarios/${u.id}`} className="text-brand-700 hover:underline">{u.name}</Link> : u.name}</td>
                 <td className="td hidden font-mono text-xs md:table-cell">{maskCpf(u.cpfLast2)}</td>
-                <td className="td hidden text-xs md:table-cell">{u.email}<br />{u.phone && formatPhone(u.phone)}</td>
+                <td className="td hidden text-xs md:table-cell">{u.email && <div>{u.email}</div>}{u.phone && <div>{formatPhone(u.phone)}</div>}</td>
                 <td className="td">{ROLE_LABEL[u.role]}</td>
                 <td className="td hidden sm:table-cell">{u.sector?.name ?? "—"}</td>
                 <td className="td">{u.anonymizedAt ? <span className="badge bg-slate-200 text-slate-600">Anonimizado</span> : u.active ? <span className="badge bg-emerald-100 text-emerald-800">Ativo</span> : <span className="badge bg-red-100 text-red-800">Inativo</span>}</td>
