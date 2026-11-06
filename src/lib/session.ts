@@ -8,13 +8,16 @@ import { randomToken, sha256 } from "./crypto";
 import { clientIp, userAgent } from "./request";
 import { env } from "./env";
 import type { Actor } from "./permissions";
+import { getSecurity } from "./settings";
 
 const COOKIE = env.isProd ? "__Host-nt_session" : "nt_session";
-const IDLE_MS = 2 * 60 * 60 * 1000; // 2 h de inatividade
-const ABSOLUTE_MS = 12 * 60 * 60 * 1000; // 12 h no máximo por sessão
+const HOUR = 60 * 60 * 1000;
 const TOUCH_MS = 5 * 60 * 1000;
 
 export async function createSession(userId: string) {
+  const sec = await getSecurity();
+  const IDLE_MS = sec.sessionIdleHours * HOUR;
+  const ABSOLUTE_MS = sec.sessionMaxHours * HOUR;
   const token = randomToken(32);
   const now = Date.now();
   await db.session.create({
@@ -63,6 +66,9 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const jar = await cookies();
   const token = jar.get(COOKIE)?.value;
   if (!token) return null;
+  const sec = await getSecurity();
+  const IDLE_MS = sec.sessionIdleHours * HOUR;
+  const ABSOLUTE_MS = sec.sessionMaxHours * HOUR;
   const sid = sha256(token);
   const s = await db.session.findUnique({
     where: { id: sid },

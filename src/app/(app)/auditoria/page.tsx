@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { requireRole } from "@/lib/session";
 import { canSeeAudit } from "@/lib/permissions";
 import { PageTitle, Pagination } from "@/components/Bits";
+import { getCompany } from "@/lib/settings";
 
 export const metadata = { title: "Auditoria" };
 export const dynamic = "force-dynamic";
@@ -9,6 +10,7 @@ const PAGE = 50;
 
 export default async function AuditPage({ searchParams }: { searchParams: Promise<{ q?: string; pagina?: string }> }) {
   await requireRole(canSeeAudit);
+  const tz = (await getCompany()).timezone;
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.pagina) || 1);
   const where = sp.q ? { OR: [{ action: { contains: sp.q } }, { actorName: { contains: sp.q, mode: "insensitive" as const } }] } : {};
@@ -26,7 +28,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
           <tbody className="divide-y divide-slate-100">
             {rows.map((r) => (
               <tr key={r.id}>
-                <td className="td whitespace-nowrap text-xs">{r.createdAt.toLocaleString("pt-BR", { timeZone: "America/Porto_Velho" })}</td>
+                <td className="td whitespace-nowrap text-xs">{r.createdAt.toLocaleString("pt-BR", { timeZone: tz })}</td>
                 <td className="td">{r.actorName ?? "—"}</td>
                 <td className="td font-mono text-xs">{r.action}</td>
                 <td className="td hidden max-w-xs truncate font-mono text-xs text-slate-500 md:table-cell">{r.meta ? JSON.stringify(r.meta) : ""}</td>

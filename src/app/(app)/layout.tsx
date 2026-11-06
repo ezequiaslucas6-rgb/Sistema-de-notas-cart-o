@@ -7,7 +7,7 @@ import { MobileNav } from "@/components/MobileNav";
 import { logoutAction } from "@/app/actions/auth";
 import { db } from "@/lib/db";
 import { requireUser, toActor } from "@/lib/session";
-import { ROLE_LABEL, canManageCatalogs, canManageIntegrations, canManageUsers, canSeeAudit, canExport } from "@/lib/permissions";
+import { ROLE_LABEL, canManageIntegrations, canManageUsers, canSeeAudit, canSeeSettings, canExport } from "@/lib/permissions";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const u = await requireUser();
@@ -20,7 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { href: "/notas/nova", label: "Nova nota", icon: "plus", show: true },
     { href: "/relatorios", label: "Relatórios", icon: "chart", show: canExport(a) },
     { href: "/usuarios", label: "Usuários", icon: "users", show: canManageUsers(a) },
-    { href: "/cadastros", label: "Cadastros", icon: "cfg", show: canManageCatalogs(a) },
+    { href: "/configuracoes", label: "Configurações", icon: "cfg", show: canSeeSettings(a) },
     { href: "/auditoria", label: "Auditoria", icon: "audit", show: canSeeAudit(a) },
     { href: "/integracoes", label: "Integrações", icon: "plug", show: canManageIntegrations(a) },
   ];

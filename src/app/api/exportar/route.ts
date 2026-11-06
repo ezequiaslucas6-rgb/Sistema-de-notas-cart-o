@@ -6,6 +6,7 @@ import { canExport } from "@/lib/permissions";
 import { buildWhere, readFilters, type SP } from "@/lib/expenses";
 import { toCsv, toPdf, toXlsx } from "@/lib/export";
 import { rateLimit } from "@/lib/ratelimit";
+import { getCompany } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 const MAX_ROWS = 20_000;
@@ -34,7 +35,8 @@ export async function GET(req: Request) {
     return new NextResponse(toCsv(rows), { headers: { ...headers, "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="notas-${stamp}.csv"` } });
   }
   if (fmt === "pdf") {
-    const pdf = await toPdf(rows, `Notas do cartão corporativo – ${stamp}`);
+    const company = await getCompany();
+    const pdf = await toPdf(rows, `${company.tradeName} – Notas do cartão corporativo – ${stamp}`);
     return new NextResponse(Buffer.from(pdf), { headers: { ...headers, "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="notas-${stamp}.pdf"` } });
   }
   const xlsx = await toXlsx(rows);

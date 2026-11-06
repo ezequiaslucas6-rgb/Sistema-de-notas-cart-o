@@ -3,19 +3,22 @@ import { notFound } from "next/navigation";
 import { FileText, Paperclip } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireUser, toActor } from "@/lib/session";
-import { canDeleteExpense, canEditExpense, canReview, canViewExpense } from "@/lib/permissions";
+import { canDeleteExpense, canEditExpense, canReviewExpense, canViewExpense } from "@/lib/permissions";
+import { closedMessage } from "@/lib/months";
 import { PAYMENT_LABEL, brDate, expenseInclude } from "@/lib/expenses";
 import { formatBRL, formatCnpj } from "@/lib/validators";
 import { PageTitle, StatusBadge } from "@/components/Bits";
 import { CommentForm } from "@/components/CommentForm";
 import { ConfirmButton } from "@/components/ui";
 import { deleteExpenseAction, removeAttachmentAction, reviewExpenseAction } from "@/app/actions/expenses";
+import { getCompany, getRules } from "@/lib/settings";
 
 export const metadata = { title: "Nota" };
 export const dynamic = "force-dynamic";
 
-export default async function ExpenseDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ criada?: string; editada?: string }> }) {
+export default async function ExpenseDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ criada?: string; editada?: string; fechado?: string }> }) {
   const u = await requireUser();
+  const tz = (await getCompany()).timezone;
   const a = toActor(u);
   const { id } = await params;
   const sp = await searchParams;
@@ -24,6 +27,10 @@ export default async function ExpenseDetail({ params, searchParams }: { params: 
     include: { ...expenseInclude, attachments: { orderBy: { createdAt: "asc" } }, comments: { orderBy: { createdAt: "asc" }, include: { user: { select: { name: true, role: true } } } } },
   });
   if (!e || !canViewExpense(a, e)) notFound();
+  const rules = await getRules();
+  const closed = await closedMessage(e.date);
+  const mayReview = canReviewExpense(a, e, rules.managerCanReview);
+  const isHigh = rules.highlightAboveCents !== null && e.amountCents >= rules.highlightAboveCents && e.status === "LANCADA";
   const history = canEditExpense(a)
     ? await db.auditLog.findMany({ where: { entity: "Expense", entityId: id }, orderBy: { createdAt: "desc" }, take: 15 })
     : [];
@@ -35,17 +42,17 @@ export default async function ExpenseDetail({ params, searchParams }: { params: 
       <PageTitle
         title={e.supplier}
         subtitle={`${brDate(e.date)} · ${e.category.name} · ${e.user.name}`}
-        notice={sp.criada ? { text: "Nota lançada com sucesso!" } : sp.editada ? { text: "Nota atualizada." } : undefined}
+        notice={sp.criada ? { text: "Nota lançada com sucesso!" } : sp.editada ? { text: "Nota atualizada." } : sp.fechado || closed ? { text: closed ?? "Mês fechado: não é possível alterar esta nota.", kind: "error" } : undefined}
       >
         <Link href="/notas" className="btn-secondary">← Voltar</Link>
-        {canEditExpense(a) && <Link href={`/notas/${e.id}/editar`} className="btn-secondary">Editar</Link>}
+        {canEditExpense(a) && !closed && <Link href={`/notas/${e.id}/editar`} className="btn-secondary">Editar</Link>}
       </PageTitle>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="card p-5 lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <div className="text-3xl font-bold tracking-tight tabular-nums text-slate-900">{formatBRL(e.amountCents)}</div>
-            <StatusBadge status={e.status} />
+            <div className="flex items-center gap-2">{isHigh && <span className="badge bg-rose-50 text-rose-700">Valor alto</span>}<StatusBadge status={e.status} /></div>
           </div>
           <dl className="divide-y divide-slate-100">
             {row("Data", brDate(e.date))}
@@ -54,12 +61,12 @@ export default async function ExpenseDetail({ params, searchParams }: { params: 
             {row("Categoria", e.category.name)}
             {row("Centro de custo", e.costCenter && `${e.costCenter.code ? e.costCenter.code + " – " : ""}${e.costCenter.name}`)}
             {row("Projeto", e.project?.name)}
-            {row("Pagamento", `${PAYMENT_LABEL[e.paymentMethod]}${e.cardLast4 ? ` · final ${e.cardLast4}` : ""}`)}
+            {row("Pagamento", `${PAYMENT_LABEL[e.paymentMethod]}${e.card ? ` · ${e.card.label} (final ${e.card.last4})` : e.cardLast4 ? ` · final ${e.cardLast4}` : ""}`)}
             {row("Descrição", e.description)}
             {row("Observação", e.observation)}
             {row("Chave NF-e", e.nfeKey)}
-            {row("Lançada em", e.createdAt.toLocaleString("pt-BR", { timeZone: "America/Porto_Velho" }))}
-            {e.status === "REVISADA" && row("Revisada por", `${e.reviewedBy?.name ?? "—"} em ${e.reviewedAt?.toLocaleString("pt-BR", { timeZone: "America/Porto_Velho" })}${e.reviewNote ? ` · ${e.reviewNote}` : ""}`)}
+            {row("Lançada em", e.createdAt.toLocaleString("pt-BR", { timeZone: tz }))}
+            {e.status === "REVISADA" && row("Revisada por", `${e.reviewedBy?.name ?? "—"} em ${e.reviewedAt?.toLocaleString("pt-BR", { timeZone: tz })}${e.reviewNote ? ` · ${e.reviewNote}` : ""}`)}
           </dl>
         </section>
 
@@ -80,7 +87,7 @@ export default async function ExpenseDetail({ params, searchParams }: { params: 
                       )}
                       <div className="truncate px-2.5 py-1.5 text-xs text-brand-700">{f.filename}</div>
                     </a>
-                    {canEditExpense(a) && e.attachments.length > 1 && (
+                    {canEditExpense(a) && !closed && e.attachments.length > 1 && (
                       <form action={removeAttachmentAction} className="border-t border-slate-100 px-2.5 py-1"><input type="hidden" name="id" value={f.id} /><ConfirmButton className="text-xs text-red-600 hover:underline" message="Remover este anexo?">remover</ConfirmButton></form>
                     )}
                   </li>
@@ -89,7 +96,7 @@ export default async function ExpenseDetail({ params, searchParams }: { params: 
             </ul>
           </section>
 
-          {canReview(a) && (
+          {mayReview && (
             <section className="card p-5">
               <h2 className="mb-3 font-semibold">Revisão</h2>
               {e.status === "LANCADA" ? (
@@ -104,7 +111,7 @@ export default async function ExpenseDetail({ params, searchParams }: { params: 
             </section>
           )}
 
-          {canDeleteExpense(a) && (
+          {canDeleteExpense(a) && !closed && (
             <form action={deleteExpenseAction}>
               <input type="hidden" name="id" value={e.id} />
               <ConfirmButton message="Excluir esta nota? A ação fica registrada na auditoria.">Excluir nota</ConfirmButton>
@@ -119,7 +126,7 @@ export default async function ExpenseDetail({ params, searchParams }: { params: 
         <ul className="mb-4 space-y-3">
           {e.comments.map((c) => (
             <li key={c.id} className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
-              <div className="mb-0.5 text-xs text-slate-500">{c.user.name} · {c.createdAt.toLocaleString("pt-BR", { timeZone: "America/Porto_Velho" })}</div>
+              <div className="mb-0.5 text-xs text-slate-500">{c.user.name} · {c.createdAt.toLocaleString("pt-BR", { timeZone: tz })}</div>
               <p className="whitespace-pre-wrap break-words">{c.text}</p>
             </li>
           ))}
@@ -131,7 +138,7 @@ export default async function ExpenseDetail({ params, searchParams }: { params: 
         <section className="card mt-6 p-5">
           <h2 className="mb-3 font-semibold">Histórico</h2>
           <ul className="space-y-1 text-sm text-slate-600">
-            {history.map((h) => <li key={h.id}>{h.createdAt.toLocaleString("pt-BR", { timeZone: "America/Porto_Velho" })} · <strong>{h.actorName ?? "sistema"}</strong> · {h.action}</li>)}
+            {history.map((h) => <li key={h.id}>{h.createdAt.toLocaleString("pt-BR", { timeZone: tz })} · <strong>{h.actorName ?? "sistema"}</strong> · {h.action}</li>)}
           </ul>
         </section>
       )}

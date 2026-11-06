@@ -115,13 +115,13 @@ export function ContactForm({ email, phone }: { email: string | null; phone: str
   );
 }
 
-export function ChangePasswordForm() {
+export function ChangePasswordForm({ minLength = 10 }: { minLength?: number }) {
     return (
     <ServerForm action={changePasswordAction} resetOnSuccess className="space-y-3">
       <Alert />
       <Field label="Senha atual"><input name="current" type="password" autoComplete="current-password" className="input" required /></Field>
-      <Field label="Nova senha" hint="Mínimo de 10 caracteres, com maiúscula, minúscula, número e símbolo."><input name="password" type="password" autoComplete="new-password" className="input" required minLength={10} /></Field>
-      <Field label="Confirmar nova senha"><input name="confirm" type="password" autoComplete="new-password" className="input" required minLength={10} /></Field>
+      <Field label="Nova senha" hint={`Mínimo de ${minLength} caracteres, com maiúscula, minúscula, número e símbolo.`}><input name="password" type="password" autoComplete="new-password" className="input" required /></Field>
+      <Field label="Confirmar nova senha"><input name="confirm" type="password" autoComplete="new-password" className="input" required /></Field>
       <SubmitButton>Alterar senha</SubmitButton>
     </ServerForm>
   );

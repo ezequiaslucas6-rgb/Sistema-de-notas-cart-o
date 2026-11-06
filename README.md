@@ -23,6 +23,10 @@ Login por **CPF, e-mail ou telefone** + senha. O status da nota é `Lançada` �
 - Notificações no sistema (e e-mail via Resend), histórico/auditoria, API somente-leitura com tokens para integrações (`/api/v1/notas`).
 - Layout responsivo (computador e celular).
 
+## Configurações (administrador e financeiro)
+
+Menu **Configurações** com: *Regras de lançamento* (anexo obrigatório, CNPJ/centro de custo/projeto exigidos, aviso de duplicidade, valor máximo por nota, prazo retroativo, gestor pode revisar, selo "Valor alto"), *Fechamento do mês* (bloqueia lançar/editar/excluir em mês conferido; reabertura), *Cartões corporativos* (final, titular, limite mensal e uso do mês), *Política de acesso* (tamanho da senha, tentativas, bloqueio, sessão), *Dados da empresa* (nome, CNPJ, fuso horário) e *Status do sistema*. Sem nada configurado, valem os padrões originais. Todas as alterações vão para a auditoria. Itens marcados "Em breve": notificações pessoais, sessões, alertas, e-mails/resumos, WhatsApp, 2 etapas, LGPD editável e backup.
+
 ## Segurança e LGPD
 
 - Senhas com **argon2id**; política de senha forte; troca obrigatória no primeiro acesso; bloqueio após 5 tentativas; rate limit por IP/identificador.

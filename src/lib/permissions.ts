@@ -19,6 +19,16 @@ export const canEditExpense = (a: Actor) => isFinance(a);
 export const canDeleteExpense = (a: Actor) => isAdmin(a);
 export const canSeeAudit = (a: Actor) => isFinance(a);
 export const canManageIntegrations = (a: Actor) => isAdmin(a);
+/** Regras, fechamento do mês e cartões: administrador e financeiro. Acesso, empresa e status: só administrador. */
+export const canManageRules = (a: Actor) => isFinance(a);
+export const canManageSystem = (a: Actor) => isAdmin(a);
+export const canSeeSettings = (a: Actor) => isFinance(a);
+
+/** Revisão: financeiro/admin sempre; gestor só do próprio setor e se a regra estiver ligada (nunca a própria nota). */
+export function canReviewExpense(a: Actor, e: { userId: string; sectorId: string | null }, managerCanReview: boolean) {
+  if (isFinance(a)) return true;
+  return managerCanReview && a.role === "GESTOR" && !!a.sectorId && e.sectorId === a.sectorId && e.userId !== a.id;
+}
 export const canExport = (a: Actor) => a.role !== "USUARIO";
 
 /**

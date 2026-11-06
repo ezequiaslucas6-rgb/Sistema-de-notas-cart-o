@@ -6,7 +6,10 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { requireUser, toActor } from "@/lib/session";
-import { canDeleteExpense, canEditExpense, canReview, canViewExpense } from "@/lib/permissions";
+import { canDeleteExpense, canEditExpense, canReviewExpense, canViewExpense } from "@/lib/permissions";
+import { getRules } from "@/lib/settings";
+import { ABSOLUTE_MAX_AMOUNT_CENTS, backdateMinDate, type Rules } from "@/lib/settings-schema";
+import { closedMessage } from "@/lib/months";
 import { FormState, optStr, str } from "@/lib/form";
 import { isValidCnpj, onlyDigits, parseMoneyToCents } from "@/lib/validators";
 import { notifyUsers } from "@/lib/notify";
@@ -29,7 +32,7 @@ const expenseSchema = z.object({
   observation: z.string().max(1000).optional(),
 });
 
-function parseExpense(fd: FormData) {
+function parseExpense(fd: FormData, rules: Rules) {
   const raw = {
     date: str(fd, "date"),
     amount: str(fd, "amount"),
@@ -41,6 +44,7 @@ function parseExpense(fd: FormData) {
     projectId: str(fd, "projectId"),
     paymentMethod: str(fd, "paymentMethod") || "CREDITO",
     cardLast4: str(fd, "cardLast4"),
+    cardId: str(fd, "cardId"),
     description: str(fd, "description"),
     observation: str(fd, "observation"),
   };
@@ -50,11 +54,13 @@ function parseExpense(fd: FormData) {
 
   const cents = parseMoneyToCents(raw.amount);
   if (!cents) fieldErrors.amount = "Valor inválido";
-  else if (cents > 500_000_00) fieldErrors.amount = "Valor acima do permitido (R$ 500.000,00)";
+  else if (cents > (rules.maxAmountCents ?? ABSOLUTE_MAX_AMOUNT_CENTS)) fieldErrors.amount = `Valor acima do limite permitido (${formatBRL(rules.maxAmountCents ?? ABSOLUTE_MAX_AMOUNT_CENTS)})`;
 
   const today = new Date(Date.now() + 24 * 3600 * 1000).toISOString().slice(0, 10);
   if (raw.date > today) fieldErrors.date = "A data não pode ser futura";
   if (raw.date < "2000-01-01") fieldErrors.date = "Data inválida";
+  const minDate = backdateMinDate(new Date().toISOString().slice(0, 10), rules.maxBackdateDays);
+  if (minDate && raw.date < minDate) fieldErrors.date = `A data não pode ser anterior a ${rules.maxBackdateDays} dia(s)`;
 
   const cnpj = onlyDigits(raw.cnpj);
   if (cnpj && !isValidCnpj(cnpj)) fieldErrors.cnpj = "CNPJ inválido";
@@ -62,8 +68,18 @@ function parseExpense(fd: FormData) {
   if (nfeKey && nfeKey.length !== 44) fieldErrors.nfeKey = "A chave de acesso tem 44 dígitos";
   const card = onlyDigits(raw.cardLast4);
   if (raw.cardLast4 && card.length !== 4) fieldErrors.cardLast4 = "Informe os 4 últimos dígitos";
+  if (rules.requireCnpj && !cnpj && !fieldErrors.cnpj) fieldErrors.cnpj = "Informe o CNPJ do fornecedor";
+  if (rules.requireCostCenter && !raw.costCenterId) fieldErrors.costCenterId = "Escolha o centro de custo";
+  if (rules.requireProject && !raw.projectId) fieldErrors.projectId = "Escolha o projeto";
 
   return { raw, cents, cnpj, nfeKey, card, fieldErrors, data: raw as Record<string, string> };
+}
+
+/** Resolve o cartão escolhido (precisa estar ativo e ser do titular) e devolve os 4 últimos dígitos. */
+async function resolveCard(cardId: string, holderId: string): Promise<{ id: string; last4: string } | null | "invalid"> {
+  if (!cardId) return null;
+  const c = await db.card.findFirst({ where: { id: cardId, active: true, OR: [{ holderId }, { holderId: null }] } });
+  return c ? { id: c.id, last4: c.last4 } : "invalid";
 }
 
 async function validateRefs(raw: { categoryId: string; costCenterId?: string; projectId?: string }) {
@@ -77,19 +93,27 @@ async function validateRefs(raw: { categoryId: string; costCenterId?: string; pr
 
 export async function createExpenseAction(_: FormState, fd: FormData): Promise<FormState> {
   const u = await requireUser();
-  const p = parseExpense(fd);
+  const rules = await getRules();
+  const p = parseExpense(fd, rules);
   const attachmentIds = fd.getAll("attachmentIds").map(String).filter(Boolean).slice(0, MAX_FILES_PER_EXPENSE);
-  if (!attachmentIds.length) p.fieldErrors.attachments = "Anexe ao menos uma foto, PDF ou XML da nota";
+  if (rules.requireAttachment && !attachmentIds.length) p.fieldErrors.attachments = "Anexe ao menos uma foto, PDF ou XML da nota";
+  const myCards = await db.card.count({ where: { holderId: u.id, active: true } });
+  const card = await resolveCard(p.raw.cardId, u.id);
+  if (card === "invalid") p.fieldErrors.cardId = "Cartão inválido";
+  else if (!card && myCards > 0) p.fieldErrors.cardId = "Selecione o cartão usado";
   if (Object.keys(p.fieldErrors).length) return { error: "Revise os campos destacados.", fieldErrors: p.fieldErrors, data: p.data };
   if (!(await validateRefs(p.raw))) return { error: "Categoria, centro de custo ou projeto inválido.", data: p.data };
+  const date = new Date(p.raw.date + "T00:00:00Z");
+  const closed = await closedMessage(date);
+  if (closed) return { error: closed, fieldErrors: { date: "Mês fechado" }, data: p.data };
 
-  const files = await db.attachment.findMany({ where: { id: { in: attachmentIds }, uploadedBy: u.id, expenseId: null } });
+  const files = attachmentIds.length ? await db.attachment.findMany({ where: { id: { in: attachmentIds }, uploadedBy: u.id, expenseId: null } }) : [];
   if (files.length !== attachmentIds.length) return { error: "Algum anexo expirou. Anexe novamente.", data: p.data };
 
   // Proteção contra duplicidade (mesmo usuário, data, valor e fornecedor)
-  const dup = await db.expense.findFirst({
-    where: { userId: u.id, deletedAt: null, date: new Date(p.raw.date + "T00:00:00Z"), amountCents: p.cents!, supplier: { equals: p.raw.supplier, mode: "insensitive" } },
-  });
+  const dup = rules.warnDuplicate
+    ? await db.expense.findFirst({ where: { userId: u.id, deletedAt: null, date, amountCents: p.cents!, supplier: { equals: p.raw.supplier, mode: "insensitive" } } })
+    : null;
   if (dup && fd.get("confirmDup") !== "on") {
     return { error: "Já existe uma nota sua com mesma data, valor e fornecedor. Marque a confirmação para lançar mesmo assim.", fieldErrors: { dup: "1" }, data: p.data };
   }
@@ -98,7 +122,7 @@ export async function createExpenseAction(_: FormState, fd: FormData): Promise<F
     data: {
       userId: u.id,
       sectorId: u.sectorId,
-      date: new Date(p.raw.date + "T00:00:00Z"),
+      date,
       amountCents: p.cents!,
       supplier: p.raw.supplier,
       cnpj: p.cnpj || null,
@@ -107,7 +131,8 @@ export async function createExpenseAction(_: FormState, fd: FormData): Promise<F
       costCenterId: p.raw.costCenterId || null,
       projectId: p.raw.projectId || null,
       paymentMethod: p.raw.paymentMethod as "CREDITO" | "DEBITO" | "OUTRO",
-      cardLast4: p.card || null,
+      cardId: card && card !== "invalid" ? card.id : null,
+      cardLast4: card && card !== "invalid" ? card.last4 : p.card || null,
       description: p.raw.description,
       observation: p.raw.observation || null,
       attachments: { connect: files.map((f) => ({ id: f.id })) },
@@ -136,14 +161,20 @@ export async function updateExpenseAction(_: FormState, fd: FormData): Promise<F
   const id = str(fd, "id");
   const current = await db.expense.findFirst({ where: { id, deletedAt: null } });
   if (!current) return { error: "Nota não encontrada." };
-  const p = parseExpense(fd);
+  const rules = await getRules();
+  const p = parseExpense(fd, rules);
+  const card = await resolveCard(p.raw.cardId, current.userId);
+  if (card === "invalid") p.fieldErrors.cardId = "Cartão inválido";
   if (Object.keys(p.fieldErrors).length) return { error: "Revise os campos destacados.", fieldErrors: p.fieldErrors, data: p.data };
   if (!(await validateRefs(p.raw))) return { error: "Categoria, centro de custo ou projeto inválido.", data: p.data };
+  const newDate = new Date(p.raw.date + "T00:00:00Z");
+  const closed = await closedMessage(current.date, newDate);
+  if (closed) return { error: closed, data: p.data };
 
   await db.expense.update({
     where: { id },
     data: {
-      date: new Date(p.raw.date + "T00:00:00Z"),
+      date: newDate,
       amountCents: p.cents!,
       supplier: p.raw.supplier,
       cnpj: p.cnpj || null,
@@ -152,7 +183,8 @@ export async function updateExpenseAction(_: FormState, fd: FormData): Promise<F
       costCenterId: p.raw.costCenterId || null,
       projectId: p.raw.projectId || null,
       paymentMethod: p.raw.paymentMethod as "CREDITO" | "DEBITO" | "OUTRO",
-      cardLast4: p.card || null,
+      cardId: card && card !== "invalid" ? card.id : null,
+      cardLast4: card && card !== "invalid" ? card.last4 : p.card || null,
       description: p.raw.description,
       observation: p.raw.observation || null,
     },
@@ -170,12 +202,13 @@ export async function updateExpenseAction(_: FormState, fd: FormData): Promise<F
 
 export async function reviewExpenseAction(fd: FormData) {
   const u = await requireUser();
-  if (!canReview(toActor(u))) return;
   const id = str(fd, "id");
   const note = optStr(fd, "note");
   const undo = fd.get("undo") === "1";
   const e = await db.expense.findFirst({ where: { id, deletedAt: null } });
   if (!e) return;
+  const rules = await getRules();
+  if (!canReviewExpense(toActor(u), e, rules.managerCanReview)) return;
   await db.expense.update({
     where: { id },
     data: undo ? { status: "LANCADA", reviewedById: null, reviewedAt: null, reviewNote: null } : { status: "REVISADA", reviewedById: u.id, reviewedAt: new Date(), reviewNote: note },
@@ -190,10 +223,11 @@ export async function reviewExpenseAction(fd: FormData) {
 
 export async function reviewManyAction(fd: FormData) {
   const u = await requireUser();
-  if (!canReview(toActor(u))) return;
   const ids = fd.getAll("ids").map(String).slice(0, 200);
   if (!ids.length) return;
-  const rows = await db.expense.findMany({ where: { id: { in: ids }, deletedAt: null, status: "LANCADA" } });
+  const rules = await getRules();
+  const found = await db.expense.findMany({ where: { id: { in: ids }, deletedAt: null, status: "LANCADA" } });
+  const rows = found.filter((r) => canReviewExpense(toActor(u), r, rules.managerCanReview));
   await db.expense.updateMany({ where: { id: { in: rows.map((r) => r.id) } }, data: { status: "REVISADA", reviewedById: u.id, reviewedAt: new Date() } });
   await audit({ actor: u, action: "nota.revisada_em_lote", meta: { quantidade: rows.length } });
   const byUser = new Map<string, number>();
@@ -208,6 +242,7 @@ export async function deleteExpenseAction(fd: FormData) {
   const id = str(fd, "id");
   const e = await db.expense.findFirst({ where: { id, deletedAt: null }, include: { attachments: true } });
   if (!e) return;
+  if (await closedMessage(e.date)) redirect(`/notas/${id}?fechado=1`);
   await db.expense.update({ where: { id }, data: { deletedAt: new Date() } });
   await audit({ actor: u, action: "nota.excluida", entity: "Expense", entityId: id, meta: { valor: e.amountCents, fornecedor: e.supplier } });
   revalidatePath("/notas");
@@ -237,8 +272,9 @@ export async function addCommentAction(_: FormState, fd: FormData): Promise<Form
 export async function removeAttachmentAction(fd: FormData) {
   const u = await requireUser();
   if (!canEditExpense(toActor(u))) return;
-  const att = await db.attachment.findUnique({ where: { id: str(fd, "id") } });
-  if (!att?.expenseId) return;
+  const att = await db.attachment.findUnique({ where: { id: str(fd, "id") }, include: { expense: true } });
+  if (!att?.expenseId || !att.expense) return;
+  if (await closedMessage(att.expense.date)) return;
   const count = await db.attachment.count({ where: { expenseId: att.expenseId } });
   if (count <= 1) return; // a nota precisa manter ao menos um anexo
   await db.attachment.delete({ where: { id: att.id } });

@@ -72,9 +72,9 @@ export function formatBRL(cents: number): string {
 
 export type PasswordCheck = { ok: boolean; problems: string[] };
 
-export function checkPassword(pw: string, personal: string[] = []): PasswordCheck {
+export function checkPassword(pw: string, personal: string[] = [], minLength = 10): PasswordCheck {
   const problems: string[] = [];
-  if (pw.length < 10) problems.push("mínimo de 10 caracteres");
+  if (pw.length < minLength) problems.push(`mínimo de ${minLength} caracteres`);
   if (pw.length > 128) problems.push("máximo de 128 caracteres");
   if (!/[a-z]/.test(pw)) problems.push("uma letra minúscula");
   if (!/[A-Z]/.test(pw)) problems.push("uma letra maiúscula");

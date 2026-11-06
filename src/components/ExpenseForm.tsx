@@ -9,7 +9,7 @@ import { parseNfeXml, parseQrContent, parseReceiptText, type Suggestion } from "
 import { lookupCnpjAction } from "@/app/actions/expenses";
 
 type Opt = { id: string; name: string };
-type Initial = Partial<Record<"id" | "date" | "amount" | "supplier" | "cnpj" | "nfeKey" | "categoryId" | "costCenterId" | "projectId" | "paymentMethod" | "cardLast4" | "description" | "observation", string>>;
+type Initial = Partial<Record<"id" | "date" | "amount" | "supplier" | "cnpj" | "nfeKey" | "categoryId" | "costCenterId" | "projectId" | "paymentMethod" | "cardLast4" | "cardId" | "description" | "observation", string>>;
 type Uploaded = { id: string; filename: string; size: number; file?: File };
 
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -50,13 +50,16 @@ async function readQr(file: File): Promise<Suggestion> {
   }
 }
 
+export type FormRules = { requireAttachment: boolean; requireCnpj: boolean; requireCostCenter: boolean; requireProject: boolean; minDate?: string };
+type CardOpt = { id: string; label: string; last4: string };
+
 export function ExpenseForm({
-  mode, action, categories, costCenters, projects, initial = {}, today,
+  mode, action, categories, costCenters, projects, initial = {}, today, rules, cards = [],
 }: {
   mode: "create" | "edit";
   action: (s: FormState, fd: FormData) => Promise<FormState>;
   categories: Opt[]; costCenters: Opt[]; projects: Opt[];
-  initial?: Initial; today: string;
+  initial?: Initial; today: string; rules: FormRules; cards?: CardOpt[];
 }) {
   const [state, formAction] = useActionState(action, null);
   const d = { ...initial, ...(state?.data ?? {}) } as Initial;
@@ -154,7 +157,7 @@ export function ExpenseForm({
 
       {mode === "create" && (
         <section className="card p-5">
-          <h2 className="mb-1 font-semibold">1. Anexe a nota</h2>
+          <h2 className="mb-1 font-semibold">1. Anexe a nota{!rules.requireAttachment && <span className="ml-2 text-xs font-normal text-slate-400">(opcional)</span>}</h2>
           <p className="mb-3 text-sm text-slate-600">Foto (use a câmera do celular), PDF ou XML da nota. Máx. 4 MB por arquivo.</p>
           <div className="flex flex-wrap gap-2">
             <label className="btn-secondary cursor-pointer">
@@ -189,13 +192,13 @@ export function ExpenseForm({
         <h2 className="mb-4 font-semibold">{mode === "create" ? "2. Dados da nota" : "Dados da nota"}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Data da compra *" error={fe.date}>
-            <input name="date" type="date" max={today} defaultValue={d.date ?? today} className="input" required />
+            <input name="date" type="date" min={rules.minDate} max={today} defaultValue={d.date ?? today} className="input" required />
           </Field>
           <Field label="Valor (R$) *" error={fe.amount}>
             <input name="amount" inputMode="decimal" placeholder="0,00" defaultValue={d.amount} className="input" required />
           </Field>
-          <Field label="CNPJ do fornecedor" error={fe.cnpj}>
-            <input name="cnpj" inputMode="numeric" placeholder="00.000.000/0000-00" defaultValue={d.cnpj ? formatCnpj(d.cnpj) : ""} className="input"
+          <Field label={`CNPJ do fornecedor${rules.requireCnpj ? " *" : ""}`} error={fe.cnpj}>
+            <input name="cnpj" inputMode="numeric" placeholder="00.000.000/0000-00" defaultValue={d.cnpj ? formatCnpj(d.cnpj) : ""} className="input" required={rules.requireCnpj}
               onChange={(e) => { e.target.value = formatCnpj(e.target.value); }}
               onBlur={(e) => { const dg = onlyDigits(e.target.value); if (isValidCnpj(dg)) lookupSupplier(dg); }} />
           </Field>
@@ -208,15 +211,15 @@ export function ExpenseForm({
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </Field>
-          <Field label="Centro de custo">
-            <select name="costCenterId" defaultValue={d.costCenterId ?? ""} className="input">
-              <option value="">—</option>
+          <Field label={`Centro de custo${rules.requireCostCenter ? " *" : ""}`} error={fe.costCenterId}>
+            <select name="costCenterId" defaultValue={d.costCenterId ?? ""} className="input" required={rules.requireCostCenter}>
+              <option value="">{rules.requireCostCenter ? "Selecione…" : "—"}</option>
               {costCenters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </Field>
-          <Field label="Projeto">
-            <select name="projectId" defaultValue={d.projectId ?? ""} className="input">
-              <option value="">—</option>
+          <Field label={`Projeto${rules.requireProject ? " *" : ""}`} error={fe.projectId}>
+            <select name="projectId" defaultValue={d.projectId ?? ""} className="input" required={rules.requireProject}>
+              <option value="">{rules.requireProject ? "Selecione…" : "—"}</option>
               {projects.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </Field>
@@ -227,9 +230,18 @@ export function ExpenseForm({
               <option value="OUTRO">Outro</option>
             </select>
           </Field>
-          <Field label="Final do cartão (4 dígitos)" error={fe.cardLast4}>
-            <input name="cardLast4" inputMode="numeric" maxLength={4} defaultValue={d.cardLast4} className="input" placeholder="1234" />
-          </Field>
+          {cards.length > 0 ? (
+            <Field label={`Cartão usado${mode === "create" ? " *" : ""}`} error={fe.cardId}>
+              <select name="cardId" defaultValue={d.cardId ?? ""} className="input" required={mode === "create"}>
+                <option value="">{mode === "create" ? "Selecione o cartão…" : "—"}</option>
+                {cards.map((c) => <option key={c.id} value={c.id}>{c.label} · final {c.last4}</option>)}
+              </select>
+            </Field>
+          ) : (
+            <Field label="Final do cartão (4 dígitos)" error={fe.cardLast4}>
+              <input name="cardLast4" inputMode="numeric" maxLength={4} defaultValue={d.cardLast4} className="input" placeholder="1234" />
+            </Field>
+          )}
           <Field label="Chave de acesso da NF-e (44 dígitos)" error={fe.nfeKey}>
             <input name="nfeKey" inputMode="numeric" maxLength={54} defaultValue={d.nfeKey} className="input" />
           </Field>

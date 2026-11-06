@@ -13,9 +13,7 @@ import { sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { FormState, str } from "@/lib/form";
 import { checkPassword, isValidCpf, normalizeEmail, normalizePhone, onlyDigits } from "@/lib/validators";
-
-const MAX_FAILS = 5;
-const LOCK_MIN = 15;
+import { getSecurity } from "@/lib/settings";
 
 function identityFilters(identifier: string): Prisma.UserWhereInput[] {
   const id = identifier.trim();
@@ -41,6 +39,7 @@ export async function loginAction(_: FormState, fd: FormData): Promise<FormState
     return { error: "Muitas tentativas. Aguarde alguns minutos e tente novamente." };
   }
 
+  const sec = await getSecurity();
   const filters = identityFilters(identifier);
   const candidates = filters.length ? await db.user.findMany({ where: { OR: filters, active: true, anonymizedAt: null } }) : [];
 
@@ -68,7 +67,7 @@ export async function loginAction(_: FormState, fd: FormData): Promise<FormState
     const fails = user.failedLogins + 1;
     await db.user.update({
       where: { id: user.id },
-      data: { failedLogins: fails, lockedUntil: fails >= MAX_FAILS ? new Date(Date.now() + LOCK_MIN * 60_000) : user.lockedUntil },
+      data: { failedLogins: fails, lockedUntil: fails >= sec.maxFailedLogins ? new Date(Date.now() + sec.lockMinutes * 60_000) : user.lockedUntil },
     });
     await audit({ actor: user, action: "auth.login.falha", meta: { tentativas: fails } });
   }
@@ -92,7 +91,7 @@ export async function firstAccessAction(_: FormState, fd: FormData): Promise<For
 
   if (!row.consentAt && !accepted) return { error: "É necessário aceitar a Política de Privacidade para continuar." };
   if (pw !== confirm) return { error: "As senhas não conferem." };
-  const check = checkPassword(pw, [row.name.split(" ")[0], row.email?.split("@")[0] ?? ""]);
+  const check = checkPassword(pw, [row.name.split(" ")[0], row.email?.split("@")[0] ?? ""], (await getSecurity()).minPasswordLength);
   if (!check.ok) return { error: `Senha fraca. Requisitos: ${check.problems.join(", ")}.` };
   if (await verifyPassword(row.passwordHash, pw)) return { error: "A nova senha deve ser diferente da senha temporária." };
 
@@ -115,7 +114,7 @@ export async function changePasswordAction(_: FormState, fd: FormData): Promise<
   const row = await db.user.findUniqueOrThrow({ where: { id: u.id } });
   if (!(await verifyPassword(row.passwordHash, current))) return { error: "Senha atual incorreta." };
   if (pw !== confirm) return { error: "As senhas não conferem." };
-  const check = checkPassword(pw, [row.name.split(" ")[0], row.email?.split("@")[0] ?? ""]);
+  const check = checkPassword(pw, [row.name.split(" ")[0], row.email?.split("@")[0] ?? ""], (await getSecurity()).minPasswordLength);
   if (!check.ok) return { error: `Senha fraca. Requisitos: ${check.problems.join(", ")}.` };
   await db.user.update({ where: { id: u.id }, data: { passwordHash: await hashPassword(pw) } });
   await destroyAllSessions(u.id, u.sessionId);
@@ -154,7 +153,7 @@ export async function resetPasswordAction(_: FormState, fd: FormData): Promise<F
   if (pw !== confirm) return { error: "As senhas não conferem." };
   const rec = await db.passwordResetToken.findUnique({ where: { id: sha256(token) }, include: { user: true } });
   if (!rec || rec.usedAt || rec.expiresAt < new Date() || !rec.user.active) return { error: "Link inválido ou expirado. Solicite um novo." };
-  const check = checkPassword(pw, [rec.user.name.split(" ")[0], rec.user.email?.split("@")[0] ?? ""]);
+  const check = checkPassword(pw, [rec.user.name.split(" ")[0], rec.user.email?.split("@")[0] ?? ""], (await getSecurity()).minPasswordLength);
   if (!check.ok) return { error: `Senha fraca. Requisitos: ${check.problems.join(", ")}.` };
   await db.$transaction([
     db.user.update({ where: { id: rec.userId }, data: { passwordHash: await hashPassword(pw), mustChangePassword: false, failedLogins: 0, lockedUntil: null } }),

@@ -6,12 +6,14 @@ import { revealCpf } from "@/lib/users";
 import { audit } from "@/lib/audit";
 import { AnonymizeForm, EditUserForm, ResetPasswordForm } from "@/components/AdminForms";
 import { PageTitle } from "@/components/Bits";
+import { getCompany } from "@/lib/settings";
 
 export const metadata = { title: "Usuário" };
 export const dynamic = "force-dynamic";
 
 export default async function UserDetail({ params }: { params: Promise<{ id: string }> }) {
   const me = await requireRole(canManageUsers);
+  const tz = (await getCompany()).timezone;
   const a = toActor(me);
   const { id } = await params;
   const u = await db.user.findUnique({ where: { id } });
@@ -23,7 +25,7 @@ export default async function UserDetail({ params }: { params: Promise<{ id: str
   if (!u.anonymizedAt) await audit({ actor: me, action: "usuario.cpf_visualizado", entity: "User", entityId: u.id });
   return (
     <>
-      <PageTitle title={u.name} subtitle={`CPF ${cpf} · ${ROLE_LABEL[u.role]} · último acesso ${u.lastLoginAt ? u.lastLoginAt.toLocaleString("pt-BR", { timeZone: "America/Porto_Velho" }) : "nunca"}`} />
+      <PageTitle title={u.name} subtitle={`CPF ${cpf} · ${ROLE_LABEL[u.role]} · último acesso ${u.lastLoginAt ? u.lastLoginAt.toLocaleString("pt-BR", { timeZone: tz }) : "nunca"}`} />
       {u.anonymizedAt ? (
         <p className="card p-5 text-sm">Dados pessoais anonimizados em {u.anonymizedAt.toLocaleDateString("pt-BR")}.</p>
       ) : (

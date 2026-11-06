@@ -3,12 +3,14 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { markNotificationsReadAction } from "@/app/actions/admin";
 import { PageTitle } from "@/components/Bits";
+import { getCompany } from "@/lib/settings";
 
 export const metadata = { title: "Notificações" };
 export const dynamic = "force-dynamic";
 
 export default async function Notifications() {
   const u = await requireUser();
+  const tz = (await getCompany()).timezone;
   const items = await db.notification.findMany({ where: { userId: u.id }, orderBy: { createdAt: "desc" }, take: 100 });
   const unread = items.some((i) => !i.readAt);
   return (
@@ -19,7 +21,7 @@ export default async function Notifications() {
         {items.map((n) => {
           const inner = (
             <div className={`px-5 py-3 ${n.readAt ? "" : "bg-brand-50/60"}`}>
-              <div className="flex items-center justify-between gap-3"><span className="font-medium">{n.title}</span><span className="shrink-0 text-xs text-slate-400">{n.createdAt.toLocaleString("pt-BR", { timeZone: "America/Porto_Velho" })}</span></div>
+              <div className="flex items-center justify-between gap-3"><span className="font-medium">{n.title}</span><span className="shrink-0 text-xs text-slate-400">{n.createdAt.toLocaleString("pt-BR", { timeZone: tz })}</span></div>
               <p className="text-sm text-slate-600">{n.body}</p>
             </div>
           );

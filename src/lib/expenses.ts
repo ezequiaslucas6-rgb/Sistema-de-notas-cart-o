@@ -75,6 +75,7 @@ export const expenseInclude = {
   costCenter: { select: { name: true, code: true } },
   project: { select: { name: true } },
   reviewedBy: { select: { name: true } },
+  card: { select: { label: true, last4: true } },
 } satisfies Prisma.ExpenseInclude;
 
 export function monthRange(ref = new Date()) {

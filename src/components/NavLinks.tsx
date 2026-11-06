@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, ClipboardList, FilePlus2, LayoutDashboard, Plug, ScrollText, Settings2, Users, UserCircle, Bell } from "lucide-react";
+import { BarChart3, ClipboardList, FilePlus2, LayoutDashboard, Plug, ScrollText, Settings, Users, UserCircle, Bell } from "lucide-react";
 
-const ICONS = { dash: LayoutDashboard, list: ClipboardList, plus: FilePlus2, chart: BarChart3, users: Users, cfg: Settings2, audit: ScrollText, plug: Plug, user: UserCircle, bell: Bell };
+const ICONS = { dash: LayoutDashboard, list: ClipboardList, plus: FilePlus2, chart: BarChart3, users: Users, cfg: Settings, audit: ScrollText, plug: Plug, user: UserCircle, bell: Bell };
 export type NavIcon = keyof typeof ICONS;
 export type NavItem = { href: string; label: string; icon: NavIcon };
 
 export function isActive(path: string, href: string) {
   if (href === "/notas") return path === "/notas" || (path.startsWith("/notas/") && !path.startsWith("/notas/nova"));
+  if (href === "/configuracoes") return path.startsWith("/configuracoes") || path.startsWith("/cadastros");
   return path === href || path.startsWith(href + "/");
 }
 

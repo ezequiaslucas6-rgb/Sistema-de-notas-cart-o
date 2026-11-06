@@ -4,6 +4,7 @@ import { revealCpf } from "@/lib/users";
 import { ROLE_LABEL } from "@/lib/permissions";
 import { ChangePasswordForm, ContactForm } from "@/components/AdminForms";
 import { PageTitle } from "@/components/Bits";
+import { getSecurity } from "@/lib/settings";
 
 export const metadata = { title: "Meu perfil" };
 export const dynamic = "force-dynamic";
@@ -26,7 +27,7 @@ export default async function Profile() {
         </section>
         <section className="card p-5">
           <h2 className="mb-3 font-semibold">Alterar senha</h2>
-          <ChangePasswordForm />
+          <ChangePasswordForm minLength={(await getSecurity()).minPasswordLength} />
         </section>
         <section className="card p-5 text-sm lg:col-span-2">
           <h2 className="mb-2 font-semibold">Seus dados (LGPD)</h2>

@@ -27,34 +27,34 @@ enum PaymentMethod {
 }
 
 model Sector {
-  id         String   @id @default(cuid())
-  name       String   @unique
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  users      User[]
-  expenses   Expense[]
+  id        String    @id @default(cuid())
+  name      String    @unique
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  users     User[]
+  expenses  Expense[]
 }
 
 model Category {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  active    Boolean   @default(true)
-  expenses  Expense[]
+  id       String    @id @default(cuid())
+  name     String    @unique
+  active   Boolean   @default(true)
+  expenses Expense[]
 }
 
 model CostCenter {
-  id        String    @id @default(cuid())
-  code      String?
-  name      String    @unique
-  active    Boolean   @default(true)
-  expenses  Expense[]
+  id       String    @id @default(cuid())
+  code     String?
+  name     String    @unique
+  active   Boolean   @default(true)
+  expenses Expense[]
 }
 
 model Project {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  active    Boolean   @default(true)
-  expenses  Expense[]
+  id       String    @id @default(cuid())
+  name     String    @unique
+  active   Boolean   @default(true)
+  expenses Expense[]
 }
 
 model User {
@@ -80,14 +80,16 @@ model User {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  sessions       Session[]
-  expenses       Expense[]       @relation("ExpenseAuthor")
-  reviewed       Expense[]       @relation("ExpenseReviewer")
-  comments       ExpenseComment[]
-  notifications  Notification[]
-  resetTokens    PasswordResetToken[]
-  apiTokens      ApiToken[]
-  attachments    Attachment[]
+  sessions      Session[]
+  expenses      Expense[]            @relation("ExpenseAuthor")
+  reviewed      Expense[]            @relation("ExpenseReviewer")
+  comments      ExpenseComment[]
+  notifications Notification[]
+  resetTokens   PasswordResetToken[]
+  apiTokens     ApiToken[]
+  attachments   Attachment[]
+  monthsClosed  ClosedMonth[]        @relation("MonthClosedBy")
+  cards         Card[]               @relation("CardHolder")
 
   @@index([role])
   @@index([sectorId])
@@ -137,6 +139,8 @@ model Expense {
   project       Project?      @relation(fields: [projectId], references: [id])
   paymentMethod PaymentMethod @default(CREDITO)
   cardLast4     String?
+  cardId        String?
+  card          Card?         @relation(fields: [cardId], references: [id])
   description   String
   observation   String?
   status        ExpenseStatus @default(LANCADA)
@@ -157,6 +161,7 @@ model Expense {
   @@index([sectorId])
   @@index([categoryId])
   @@index([deletedAt])
+  @@index([cardId])
 }
 
 model Attachment {
@@ -224,20 +229,52 @@ model RateLimit {
 }
 
 model ApiToken {
-  id         String    @id @default(cuid())
-  name       String
-  tokenHash  String    @unique
-  prefix     String
+  id          String    @id @default(cuid())
+  name        String
+  tokenHash   String    @unique
+  prefix      String
   createdById String
-  createdBy  User      @relation(fields: [createdById], references: [id])
-  lastUsedAt DateTime?
-  revokedAt  DateTime?
-  createdAt  DateTime  @default(now())
+  createdBy   User      @relation(fields: [createdById], references: [id])
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
 }
 
 /// Conteúdo dos anexos quando STORAGE_DRIVER=db (padrão em produção sem Storage externo).
 model FileBlob {
-  storageKey String @id
+  storageKey String   @id
   data       Bytes
   createdAt  DateTime @default(now())
+}
+
+/// Configurações do sistema (chave → JSON). Chaves: "rules", "security", "company".
+model Setting {
+  key         String   @id
+  value       Json
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+}
+
+/// Meses fechados para lançamento (formato "AAAA-MM").
+model ClosedMonth {
+  yearMonth  String   @id
+  closedById String
+  closedBy   User     @relation("MonthClosedBy", fields: [closedById], references: [id])
+  closedAt   DateTime @default(now())
+  note       String?
+}
+
+/// Cartões corporativos.
+model Card {
+  id         String    @id @default(cuid())
+  label      String
+  last4      String
+  holderId   String?
+  holder     User?     @relation("CardHolder", fields: [holderId], references: [id], onDelete: SetNull)
+  limitCents Int?
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  expenses   Expense[]
+
+  @@index([holderId])
 }

@@ -77,3 +77,51 @@ describe("permissões", () => {
     expect(canAdminUser(fin, { id: "z", role: "ADMIN", sectorId: null })).toBe(false);
   });
 });
+
+import { backdateMinDate, companySchema, parseOrDefault, rulesSchema, securitySchema } from "../src/lib/settings-schema";
+import { canReviewExpense, canSeeSettings, canManageSystem, canManageRules } from "../src/lib/permissions";
+
+describe("configurações", () => {
+  it("padrões preservam o comportamento original", () => {
+    const r = parseOrDefault(rulesSchema, undefined);
+    expect(r).toMatchObject({ requireAttachment: true, warnDuplicate: true, requireCnpj: false, maxAmountCents: null, maxBackdateDays: null, managerCanReview: false });
+    expect(parseOrDefault(securitySchema, {})).toEqual({ minPasswordLength: 10, maxFailedLogins: 5, lockMinutes: 15, sessionIdleHours: 2, sessionMaxHours: 12 });
+    expect(parseOrDefault(companySchema, {}).timezone).toBe("America/Porto_Velho");
+  });
+  it("valor salvo inválido volta ao padrão", () => {
+    expect(parseOrDefault(securitySchema, { minPasswordLength: 2 }).minPasswordLength).toBe(10);
+    expect(parseOrDefault(rulesSchema, { maxAmountCents: -5 }).maxAmountCents).toBeNull();
+  });
+  it("limites da política de acesso", () => {
+    expect(securitySchema.safeParse({ minPasswordLength: 7 }).success).toBe(false);
+    expect(securitySchema.safeParse({ minPasswordLength: 12, maxFailedLogins: 3, lockMinutes: 30, sessionIdleHours: 1, sessionMaxHours: 8 }).success).toBe(true);
+  });
+  it("data mínima do lançamento retroativo", () => {
+    expect(backdateMinDate("2026-11-05", 30)).toBe("2026-10-06");
+    expect(backdateMinDate("2026-11-05", null)).toBeUndefined();
+  });
+  it("senha respeita o tamanho mínimo configurado", () => {
+    expect(checkPassword("Zebra#Lapis7Mar", [], 16).ok).toBe(false);
+    expect(checkPassword("Zebra#Lapis7Mar", [], 12).ok).toBe(true);
+  });
+  it("quem revisa", () => {
+    const fin = { id: "f", role: "FINANCEIRO", sectorId: null } as const;
+    const ger = { id: "g", role: "GESTOR", sectorId: "s1" } as const;
+    const usr = { id: "u", role: "USUARIO", sectorId: "s1" } as const;
+    const nota = { userId: "x", sectorId: "s1" };
+    expect(canReviewExpense(fin, nota, false)).toBe(true);
+    expect(canReviewExpense(ger, nota, false)).toBe(false);
+    expect(canReviewExpense(ger, nota, true)).toBe(true);
+    expect(canReviewExpense(ger, { userId: "x", sectorId: "s2" }, true)).toBe(false);
+    expect(canReviewExpense(ger, { userId: "g", sectorId: "s1" }, true)).toBe(false);
+    expect(canReviewExpense(usr, nota, true)).toBe(false);
+  });
+  it("acesso às configurações", () => {
+    const fin = { id: "f", role: "FINANCEIRO", sectorId: null } as const;
+    const adm = { id: "a", role: "ADMIN", sectorId: null } as const;
+    const usr = { id: "u", role: "USUARIO", sectorId: null } as const;
+    expect([canSeeSettings(fin), canManageRules(fin), canManageSystem(fin)]).toEqual([true, true, false]);
+    expect([canSeeSettings(adm), canManageRules(adm), canManageSystem(adm)]).toEqual([true, true, true]);
+    expect(canSeeSettings(usr)).toBe(false);
+  });
+});

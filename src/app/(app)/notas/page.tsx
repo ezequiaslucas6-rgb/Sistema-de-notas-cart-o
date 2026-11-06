@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser, toActor } from "@/lib/session";
-import { canReview } from "@/lib/permissions";
+import { canReviewExpense } from "@/lib/permissions";
+import { getRules } from "@/lib/settings";
 import { brDate, buildWhere, expenseInclude, readFilters, monthRange, type SP } from "@/lib/expenses";
 import { formatBRL } from "@/lib/validators";
 import { FilterBar, filtersToQuery } from "@/components/FilterBar";
@@ -28,7 +29,11 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
     db.expense.aggregate({ where, _sum: { amountCents: true } }),
     a.role === "USUARIO" ? db.expense.aggregate({ where: buildWhere(a, { from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10) }), _sum: { amountCents: true } }) : Promise.resolve(null),
   ]);
-  const review = canReview(a);
+  const rules = await getRules();
+  const reviewable = (e: { userId: string; sectorId: string | null }) => canReviewExpense(a, e, rules.managerCanReview);
+  const review = rows.some((r) => r.status === "LANCADA" && reviewable(r));
+  const high = (e: { amountCents: number; status: string }) => rules.highlightAboveCents !== null && e.amountCents >= rules.highlightAboveCents && e.status === "LANCADA";
+  const HighBadge = () => <span className="badge bg-rose-50 text-rose-700">Valor alto</span>;
   const base = `/notas${filtersToQuery(f) ? "?" + filtersToQuery(f) : ""}`;
 
   return (
@@ -45,7 +50,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
       <FilterBar actor={a} f={f} action="/notas" />
 
       <form action={reviewManyAction}>
-        {review && rows.some((r) => r.status === "LANCADA") && (
+        {review && (
           <div className="mb-3"><button className="btn-secondary" formAction={reviewManyAction}>Marcar selecionadas como revisadas</button></div>
         )}
         {rows.length === 0 ? (
@@ -71,14 +76,14 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
                 <tbody className="divide-y divide-slate-100">
                   {rows.map((e) => (
                     <tr key={e.id} className="transition hover:bg-brand-50/40">
-                      {review && <td className="td">{e.status === "LANCADA" && <input type="checkbox" name="ids" value={e.id} aria-label={`Selecionar ${e.supplier}`} className="h-4 w-4 rounded border-slate-300" />}</td>}
+                      {review && <td className="td">{e.status === "LANCADA" && reviewable(e) && <input type="checkbox" name="ids" value={e.id} aria-label={`Selecionar ${e.supplier}`} className="h-4 w-4 rounded border-slate-300" />}</td>}
                       <td className="td whitespace-nowrap text-slate-600">{brDate(e.date)}</td>
                       {a.role !== "USUARIO" && (
                         <td className="td"><div className="flex items-center gap-2.5"><Avatar name={e.user.name} className="!h-8 !w-8" /><div className="leading-tight"><div className="font-medium">{e.user.name}</div><div className="text-xs text-slate-500">{e.sector?.name}</div></div></div></td>
                       )}
                       <td className="td"><Link href={`/notas/${e.id}`} className="font-semibold text-brand-700 hover:underline">{e.supplier}</Link><div className="max-w-xs truncate text-xs text-slate-500">{e.description}</div></td>
                       <td className="td text-slate-600">{e.category.name}</td>
-                      <td className="td"><StatusBadge status={e.status} /></td>
+                      <td className="td"><div className="flex flex-wrap items-center gap-1.5"><StatusBadge status={e.status} />{high(e) && <HighBadge />}</div></td>
                       <td className="td whitespace-nowrap text-right font-bold tabular-nums">{formatBRL(e.amountCents)}</td>
                     </tr>
                   ))}
@@ -90,7 +95,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
             <ul className="space-y-3 md:hidden">
               {rows.map((e) => (
                 <li key={e.id} className="card flex items-start gap-3 p-4">
-                  {review && e.status === "LANCADA" && <input type="checkbox" name="ids" value={e.id} aria-label={`Selecionar ${e.supplier}`} className="mt-1 h-5 w-5 rounded border-slate-300" />}
+                  {review && e.status === "LANCADA" && reviewable(e) && <input type="checkbox" name="ids" value={e.id} aria-label={`Selecionar ${e.supplier}`} className="mt-1 h-5 w-5 rounded border-slate-300" />}
                   <Link href={`/notas/${e.id}`} className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0"><div className="truncate font-semibold">{e.supplier}</div><div className="truncate text-xs text-slate-500">{brDate(e.date)} · {e.category.name}</div></div>
@@ -98,7 +103,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
                     </div>
                     <div className="mt-2 flex items-center justify-between gap-2">
                       <span className="truncate text-xs text-slate-500">{a.role === "USUARIO" ? e.description : e.user.name}</span>
-                      <StatusBadge status={e.status} />
+                      <div className="flex items-center gap-1.5">{high(e) && <HighBadge />}<StatusBadge status={e.status} /></div>
                     </div>
                   </Link>
                 </li>

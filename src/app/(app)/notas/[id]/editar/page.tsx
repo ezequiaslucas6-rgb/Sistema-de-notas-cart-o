@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { requireRole } from "@/lib/session";
 import { canEditExpense } from "@/lib/permissions";
 import { ymd } from "@/lib/expenses";
+import { getRules } from "@/lib/settings";
+import { closedMessage } from "@/lib/months";
 import { updateExpenseAction } from "@/app/actions/expenses";
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { PageTitle } from "@/components/Bits";
@@ -14,6 +16,9 @@ export default async function EditExpense({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const e = await db.expense.findFirst({ where: { id, deletedAt: null } });
   if (!e) notFound();
+  const rules = await getRules();
+  const closed = await closedMessage(e.date);
+  const cards = await db.card.findMany({ where: { OR: [{ holderId: e.userId, active: true }, ...(e.cardId ? [{ id: e.cardId }] : [])] }, orderBy: { label: "asc" }, select: { id: true, label: true, last4: true } });
   const [categories, costCenters, projects] = await Promise.all([
     db.category.findMany({ where: { OR: [{ active: true }, { id: e.categoryId }] }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     db.costCenter.findMany({ where: { OR: [{ active: true }, { id: e.costCenterId ?? "" }] }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
@@ -21,7 +26,7 @@ export default async function EditExpense({ params }: { params: Promise<{ id: st
   ]);
   return (
     <>
-      <PageTitle title="Editar nota" subtitle="As alterações ficam registradas na auditoria" />
+      <PageTitle title="Editar nota" subtitle="As alterações ficam registradas na auditoria" notice={closed ? { text: closed, kind: "error" } : undefined} />
       <ExpenseForm
         mode="edit"
         action={updateExpenseAction}
@@ -29,9 +34,11 @@ export default async function EditExpense({ params }: { params: Promise<{ id: st
         costCenters={costCenters}
         projects={projects}
         today={ymd(new Date())}
+        cards={cards}
+        rules={{ requireAttachment: false, requireCnpj: rules.requireCnpj, requireCostCenter: rules.requireCostCenter, requireProject: rules.requireProject }}
         initial={{
           id: e.id, date: ymd(e.date), amount: (e.amountCents / 100).toFixed(2).replace(".", ","), supplier: e.supplier, cnpj: e.cnpj ?? "", nfeKey: e.nfeKey ?? "",
-          categoryId: e.categoryId, costCenterId: e.costCenterId ?? "", projectId: e.projectId ?? "", paymentMethod: e.paymentMethod, cardLast4: e.cardLast4 ?? "",
+          categoryId: e.categoryId, costCenterId: e.costCenterId ?? "", projectId: e.projectId ?? "", paymentMethod: e.paymentMethod, cardLast4: e.cardLast4 ?? "", cardId: e.cardId ?? "",
           description: e.description, observation: e.observation ?? "",
         }}
       />
