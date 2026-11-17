@@ -1,0 +1,1196 @@
+{
+  "sistema": "Nortetel Notas – notas do cartão corporativo",
+  "origem": "Estrutura conferida por impressão digital (MD5) idêntica entre o esquema do código e o banco de produção (Supabase, São Paulo) em 17/11/2026; linhas, dono, RLS e tamanho vêm do banco de produção. Não contém dados pessoais.",
+  "banco": "postgres",
+  "versao": "PostgreSQL 17.11 on aarch64-unknown-linux-gnu, compiled by gcc (GCC) 15.2.0, 64-bit",
+  "tabelas": [
+    {
+      "dono": "notas_app",
+      "linhas": 0,
+      "tabela": "ApiToken",
+      "colunas": [
+        {
+          "nome": "id",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "name",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "tokenHash",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "prefix",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "createdById",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "lastUsedAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "revokedAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "createdAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": "CURRENT_TIMESTAMP",
+          "obrigatorio": true
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"ApiToken_pkey\" ON public.\"ApiToken\" USING btree (id)",
+        "CREATE UNIQUE INDEX \"ApiToken_tokenHash_key\" ON public.\"ApiToken\" USING btree (\"tokenHash\")"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "ApiToken_pkey",
+          "definicao": "PRIMARY KEY (id)"
+        },
+        {
+          "nome": "ApiToken_createdById_fkey",
+          "definicao": "FOREIGN KEY (\"createdById\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 0,
+      "tabela": "Attachment",
+      "colunas": [
+        {
+          "nome": "id",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "expenseId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "uploadedBy",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "storageKey",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "filename",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "mime",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "size",
+          "tipo": "integer",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "sha256",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "createdAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": "CURRENT_TIMESTAMP",
+          "obrigatorio": true
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"Attachment_pkey\" ON public.\"Attachment\" USING btree (id)",
+        "CREATE UNIQUE INDEX \"Attachment_storageKey_key\" ON public.\"Attachment\" USING btree (\"storageKey\")",
+        "CREATE INDEX \"Attachment_expenseId_idx\" ON public.\"Attachment\" USING btree (\"expenseId\")",
+        "CREATE INDEX \"Attachment_uploadedBy_expenseId_idx\" ON public.\"Attachment\" USING btree (\"uploadedBy\", \"expenseId\")"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "Attachment_pkey",
+          "definicao": "PRIMARY KEY (id)"
+        },
+        {
+          "nome": "Attachment_expenseId_fkey",
+          "definicao": "FOREIGN KEY (\"expenseId\") REFERENCES \"Expense\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+        },
+        {
+          "nome": "Attachment_uploadedBy_fkey",
+          "definicao": "FOREIGN KEY (\"uploadedBy\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 11,
+      "tabela": "AuditLog",
+      "colunas": [
+        {
+          "nome": "id",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "actorId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "actorName",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "action",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "entity",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "entityId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "meta",
+          "tipo": "jsonb",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "ip",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "createdAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": "CURRENT_TIMESTAMP",
+          "obrigatorio": true
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"AuditLog_pkey\" ON public.\"AuditLog\" USING btree (id)",
+        "CREATE INDEX \"AuditLog_createdAt_idx\" ON public.\"AuditLog\" USING btree (\"createdAt\")",
+        "CREATE INDEX \"AuditLog_entity_entityId_idx\" ON public.\"AuditLog\" USING btree (entity, \"entityId\")",
+        "CREATE INDEX \"AuditLog_actorId_idx\" ON public.\"AuditLog\" USING btree (\"actorId\")"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "AuditLog_pkey",
+          "definicao": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 0,
+      "tabela": "Card",
+      "colunas": [
+        {
+          "nome": "id",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "label",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "last4",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "holderId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "limitCents",
+          "tipo": "integer",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "active",
+          "tipo": "boolean",
+          "padrao": "true",
+          "obrigatorio": true
+        },
+        {
+          "nome": "createdAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": "CURRENT_TIMESTAMP",
+          "obrigatorio": true
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"Card_pkey\" ON public.\"Card\" USING btree (id)",
+        "CREATE INDEX \"Card_holderId_idx\" ON public.\"Card\" USING btree (\"holderId\")"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "Card_pkey",
+          "definicao": "PRIMARY KEY (id)"
+        },
+        {
+          "nome": "Card_holderId_fkey",
+          "definicao": "FOREIGN KEY (\"holderId\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 9,
+      "tabela": "Category",
+      "colunas": [
+        {
+          "nome": "id",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "name",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "active",
+          "tipo": "boolean",
+          "padrao": "true",
+          "obrigatorio": true
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"Category_pkey\" ON public.\"Category\" USING btree (id)",
+        "CREATE UNIQUE INDEX \"Category_name_key\" ON public.\"Category\" USING btree (name)"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "Category_pkey",
+          "definicao": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 0,
+      "tabela": "ClosedMonth",
+      "colunas": [
+        {
+          "nome": "yearMonth",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "closedById",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "closedAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": "CURRENT_TIMESTAMP",
+          "obrigatorio": true
+        },
+        {
+          "nome": "note",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"ClosedMonth_pkey\" ON public.\"ClosedMonth\" USING btree (\"yearMonth\")"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "ClosedMonth_pkey",
+          "definicao": "PRIMARY KEY (\"yearMonth\")"
+        },
+        {
+          "nome": "ClosedMonth_closedById_fkey",
+          "definicao": "FOREIGN KEY (\"closedById\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 1,
+      "tabela": "CostCenter",
+      "colunas": [
+        {
+          "nome": "id",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "code",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "name",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "active",
+          "tipo": "boolean",
+          "padrao": "true",
+          "obrigatorio": true
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"CostCenter_pkey\" ON public.\"CostCenter\" USING btree (id)",
+        "CREATE UNIQUE INDEX \"CostCenter_name_key\" ON public.\"CostCenter\" USING btree (name)"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "CostCenter_pkey",
+          "definicao": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 0,
+      "tabela": "Expense",
+      "colunas": [
+        {
+          "nome": "id",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "userId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "sectorId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "date",
+          "tipo": "date",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "amountCents",
+          "tipo": "integer",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "supplier",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "cnpj",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "nfeKey",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "categoryId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "costCenterId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "projectId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "paymentMethod",
+          "tipo": "\"PaymentMethod\"",
+          "padrao": "'CREDITO'::\"PaymentMethod\"",
+          "obrigatorio": true
+        },
+        {
+          "nome": "cardLast4",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "description",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "observation",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "status",
+          "tipo": "\"ExpenseStatus\"",
+          "padrao": "'LANCADA'::\"ExpenseStatus\"",
+          "obrigatorio": true
+        },
+        {
+          "nome": "reviewedById",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "reviewedAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "reviewNote",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "createdAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": "CURRENT_TIMESTAMP",
+          "obrigatorio": true
+        },
+        {
+          "nome": "updatedAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "deletedAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "cardId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"Expense_pkey\" ON public.\"Expense\" USING btree (id)",
+        "CREATE INDEX \"Expense_userId_date_idx\" ON public.\"Expense\" USING btree (\"userId\", date)",
+        "CREATE INDEX \"Expense_date_idx\" ON public.\"Expense\" USING btree (date)",
+        "CREATE INDEX \"Expense_status_idx\" ON public.\"Expense\" USING btree (status)",
+        "CREATE INDEX \"Expense_sectorId_idx\" ON public.\"Expense\" USING btree (\"sectorId\")",
+        "CREATE INDEX \"Expense_categoryId_idx\" ON public.\"Expense\" USING btree (\"categoryId\")",
+        "CREATE INDEX \"Expense_deletedAt_idx\" ON public.\"Expense\" USING btree (\"deletedAt\")",
+        "CREATE INDEX \"Expense_cardId_idx\" ON public.\"Expense\" USING btree (\"cardId\")"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "Expense_pkey",
+          "definicao": "PRIMARY KEY (id)"
+        },
+        {
+          "nome": "Expense_userId_fkey",
+          "definicao": "FOREIGN KEY (\"userId\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+        },
+        {
+          "nome": "Expense_sectorId_fkey",
+          "definicao": "FOREIGN KEY (\"sectorId\") REFERENCES \"Sector\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+        },
+        {
+          "nome": "Expense_categoryId_fkey",
+          "definicao": "FOREIGN KEY (\"categoryId\") REFERENCES \"Category\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+        },
+        {
+          "nome": "Expense_costCenterId_fkey",
+          "definicao": "FOREIGN KEY (\"costCenterId\") REFERENCES \"CostCenter\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+        },
+        {
+          "nome": "Expense_projectId_fkey",
+          "definicao": "FOREIGN KEY (\"projectId\") REFERENCES \"Project\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+        },
+        {
+          "nome": "Expense_reviewedById_fkey",
+          "definicao": "FOREIGN KEY (\"reviewedById\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+        },
+        {
+          "nome": "Expense_cardId_fkey",
+          "definicao": "FOREIGN KEY (\"cardId\") REFERENCES \"Card\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 0,
+      "tabela": "ExpenseComment",
+      "colunas": [
+        {
+          "nome": "id",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "expenseId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "userId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "text",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "createdAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": "CURRENT_TIMESTAMP",
+          "obrigatorio": true
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"ExpenseComment_pkey\" ON public.\"ExpenseComment\" USING btree (id)",
+        "CREATE INDEX \"ExpenseComment_expenseId_idx\" ON public.\"ExpenseComment\" USING btree (\"expenseId\")"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "ExpenseComment_pkey",
+          "definicao": "PRIMARY KEY (id)"
+        },
+        {
+          "nome": "ExpenseComment_expenseId_fkey",
+          "definicao": "FOREIGN KEY (\"expenseId\") REFERENCES \"Expense\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+        },
+        {
+          "nome": "ExpenseComment_userId_fkey",
+          "definicao": "FOREIGN KEY (\"userId\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE RESTRICT"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 0,
+      "tabela": "FileBlob",
+      "colunas": [
+        {
+          "nome": "storageKey",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "data",
+          "tipo": "bytea",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "createdAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": "CURRENT_TIMESTAMP",
+          "obrigatorio": true
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"FileBlob_pkey\" ON public.\"FileBlob\" USING btree (\"storageKey\")"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "FileBlob_pkey",
+          "definicao": "PRIMARY KEY (\"storageKey\")"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 0,
+      "tabela": "Notification",
+      "colunas": [
+        {
+          "nome": "id",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "userId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "title",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "body",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "link",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "readAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "createdAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": "CURRENT_TIMESTAMP",
+          "obrigatorio": true
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"Notification_pkey\" ON public.\"Notification\" USING btree (id)",
+        "CREATE INDEX \"Notification_userId_readAt_idx\" ON public.\"Notification\" USING btree (\"userId\", \"readAt\")"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "Notification_pkey",
+          "definicao": "PRIMARY KEY (id)"
+        },
+        {
+          "nome": "Notification_userId_fkey",
+          "definicao": "FOREIGN KEY (\"userId\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 0,
+      "tabela": "PasswordResetToken",
+      "colunas": [
+        {
+          "nome": "id",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "userId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "expiresAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "usedAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "createdAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": "CURRENT_TIMESTAMP",
+          "obrigatorio": true
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"PasswordResetToken_pkey\" ON public.\"PasswordResetToken\" USING btree (id)",
+        "CREATE INDEX \"PasswordResetToken_userId_idx\" ON public.\"PasswordResetToken\" USING btree (\"userId\")"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "PasswordResetToken_pkey",
+          "definicao": "PRIMARY KEY (id)"
+        },
+        {
+          "nome": "PasswordResetToken_userId_fkey",
+          "definicao": "FOREIGN KEY (\"userId\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 0,
+      "tabela": "Project",
+      "colunas": [
+        {
+          "nome": "id",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "name",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "active",
+          "tipo": "boolean",
+          "padrao": "true",
+          "obrigatorio": true
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"Project_pkey\" ON public.\"Project\" USING btree (id)",
+        "CREATE UNIQUE INDEX \"Project_name_key\" ON public.\"Project\" USING btree (name)"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "Project_pkey",
+          "definicao": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 1,
+      "tabela": "RateLimit",
+      "colunas": [
+        {
+          "nome": "key",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "count",
+          "tipo": "integer",
+          "padrao": "0",
+          "obrigatorio": true
+        },
+        {
+          "nome": "windowStart",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": "CURRENT_TIMESTAMP",
+          "obrigatorio": true
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"RateLimit_pkey\" ON public.\"RateLimit\" USING btree (key)"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "RateLimit_pkey",
+          "definicao": "PRIMARY KEY (key)"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 5,
+      "tabela": "Sector",
+      "colunas": [
+        {
+          "nome": "id",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "name",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "active",
+          "tipo": "boolean",
+          "padrao": "true",
+          "obrigatorio": true
+        },
+        {
+          "nome": "createdAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": "CURRENT_TIMESTAMP",
+          "obrigatorio": true
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"Sector_pkey\" ON public.\"Sector\" USING btree (id)",
+        "CREATE UNIQUE INDEX \"Sector_name_key\" ON public.\"Sector\" USING btree (name)"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "Sector_pkey",
+          "definicao": "PRIMARY KEY (id)"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 1,
+      "tabela": "Session",
+      "colunas": [
+        {
+          "nome": "id",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "userId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "expiresAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "lastSeenAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": "CURRENT_TIMESTAMP",
+          "obrigatorio": true
+        },
+        {
+          "nome": "ip",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "userAgent",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "createdAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": "CURRENT_TIMESTAMP",
+          "obrigatorio": true
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"Session_pkey\" ON public.\"Session\" USING btree (id)",
+        "CREATE INDEX \"Session_userId_idx\" ON public.\"Session\" USING btree (\"userId\")",
+        "CREATE INDEX \"Session_expiresAt_idx\" ON public.\"Session\" USING btree (\"expiresAt\")"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "Session_pkey",
+          "definicao": "PRIMARY KEY (id)"
+        },
+        {
+          "nome": "Session_userId_fkey",
+          "definicao": "FOREIGN KEY (\"userId\") REFERENCES \"User\"(id) ON UPDATE CASCADE ON DELETE CASCADE"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 0,
+      "tabela": "Setting",
+      "colunas": [
+        {
+          "nome": "key",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "value",
+          "tipo": "jsonb",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "updatedAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "updatedById",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"Setting_pkey\" ON public.\"Setting\" USING btree (key)"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "Setting_pkey",
+          "definicao": "PRIMARY KEY (key)"
+        }
+      ]
+    },
+    {
+      "dono": "notas_app",
+      "linhas": 4,
+      "tabela": "User",
+      "colunas": [
+        {
+          "nome": "id",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "name",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "cpfHash",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "cpfEnc",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "cpfLast2",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "email",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "phone",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "passwordHash",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": true
+        },
+        {
+          "nome": "role",
+          "tipo": "\"Role\"",
+          "padrao": "'USUARIO'::\"Role\"",
+          "obrigatorio": true
+        },
+        {
+          "nome": "sectorId",
+          "tipo": "text",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "active",
+          "tipo": "boolean",
+          "padrao": "true",
+          "obrigatorio": true
+        },
+        {
+          "nome": "mustChangePassword",
+          "tipo": "boolean",
+          "padrao": "true",
+          "obrigatorio": true
+        },
+        {
+          "nome": "failedLogins",
+          "tipo": "integer",
+          "padrao": "0",
+          "obrigatorio": true
+        },
+        {
+          "nome": "lockedUntil",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "lastLoginAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "consentAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "anonymizedAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": null,
+          "obrigatorio": false
+        },
+        {
+          "nome": "createdAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": "CURRENT_TIMESTAMP",
+          "obrigatorio": true
+        },
+        {
+          "nome": "updatedAt",
+          "tipo": "timestamp(3) without time zone",
+          "padrao": null,
+          "obrigatorio": true
+        }
+      ],
+      "indices": [
+        "CREATE UNIQUE INDEX \"User_pkey\" ON public.\"User\" USING btree (id)",
+        "CREATE UNIQUE INDEX \"User_cpfHash_key\" ON public.\"User\" USING btree (\"cpfHash\")",
+        "CREATE UNIQUE INDEX \"User_email_key\" ON public.\"User\" USING btree (email)",
+        "CREATE UNIQUE INDEX \"User_phone_key\" ON public.\"User\" USING btree (phone)",
+        "CREATE INDEX \"User_role_idx\" ON public.\"User\" USING btree (role)",
+        "CREATE INDEX \"User_sectorId_idx\" ON public.\"User\" USING btree (\"sectorId\")"
+      ],
+      "rls_ativo": true,
+      "restricoes": [
+        {
+          "nome": "User_pkey",
+          "definicao": "PRIMARY KEY (id)"
+        },
+        {
+          "nome": "User_sectorId_fkey",
+          "definicao": "FOREIGN KEY (\"sectorId\") REFERENCES \"Sector\"(id) ON UPDATE CASCADE ON DELETE SET NULL"
+        }
+      ]
+    }
+  ],
+  "tamanho": "12 MB",
+  "gerado_em": "2026-11-17T15:05:32.595514+00:00",
+  "tipos_enumerados": {
+    "Role": [
+      "ADMIN",
+      "FINANCEIRO",
+      "GESTOR",
+      "USUARIO"
+    ],
+    "ExpenseStatus": [
+      "LANCADA",
+      "REVISADA"
+    ],
+    "PaymentMethod": [
+      "CREDITO",
+      "DEBITO",
+      "OUTRO"
+    ]
+  }
+}
